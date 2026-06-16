@@ -3,6 +3,7 @@ import citymap from "@/assets/citymap2.jpg";
 import TaxiTycoon from "@/game/TaxiTycoon";
 import AdminPanel from "@/game/AdminPanel";
 import RulesPanel from "@/game/RulesPanel";
+import WaypointTraffic from "@/game/WaypointTraffic";
 
 export const Route = createFileRoute("/")({
   head: () => ({
