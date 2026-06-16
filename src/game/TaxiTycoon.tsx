@@ -368,13 +368,22 @@ export default function TaxiTycoon() {
           } else if (taxi.mode === "to_dest") {
             const c = clientsRef.current.find((x) => x.id === taxi.clientId);
             if (c && measureRef.current) {
+              const activeBoost = boostRef.current && boostRef.current.until > now ? boostRef.current.mult : 1;
+              const finalFare = Math.round(c.fare * activeBoost);
               const p = measureRef.current.getPointAtLength(c.dropoff);
-              popFloat(`+${fmt(c.fare)}$`, p.x, p.y);
+              popFloat(`+${fmt(finalFare)}$${activeBoost > 1 ? " ×" + activeBoost : ""}`, p.x, p.y);
               setSave((s) => ({
                 ...s,
-                money: s.money + c.fare,
-                totalEarned: s.totalEarned + c.fare,
+                money: s.money + finalFare,
+                totalEarned: s.totalEarned + finalFare,
                 customersServed: s.customersServed + 1,
+              }));
+              // Update contracts progress
+              setContracts((cs) => cs.map((ct) => {
+                if (ct.deadline < now) return ct;
+                if (ct.kind === "clients" || ct.kind === "streak") return { ...ct, progress: ct.progress + 1 };
+                if (ct.kind === "earn") return { ...ct, progress: ct.progress + finalFare };
+                return ct;
               }));
               clientsRef.current = clientsRef.current.filter((x) => x.id !== c.id);
             }
