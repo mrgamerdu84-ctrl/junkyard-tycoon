@@ -196,6 +196,49 @@ export default function TaxiTycoon() {
   const [popups, setPopups] = useState<{ id: number; text: string; x: number; y: number }[]>([]);
   const popIdRef = useRef(0);
 
+  // Contracts state
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const contractsRef = useRef<Contract[]>([]);
+  contractsRef.current = contracts;
+  const [boost, setBoost] = useState<ActiveBoost>(null);
+  const boostRef = useRef<ActiveBoost>(null);
+  boostRef.current = boost;
+  const [nowTick, setNowTick] = useState(Date.now());
+  const contractIdRef = useRef(1);
+
+  const genContract = (tierIdx: number): Contract => {
+    const now = Date.now();
+    const t = DEPOT_TIERS[tierIdx];
+    const kinds: ContractKind[] = ["clients", "earn", "streak"];
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    const id = contractIdRef.current++;
+    const tierBoost = 1 + tierIdx * 0.3;
+    if (kind === "clients") {
+      const target = Math.round((3 + Math.floor(Math.random() * 4)) * (1 + tierIdx * 0.5));
+      const duration = (45 + target * 8) * 1000;
+      const rewardCash = Math.round(target * 80 * t.fareMult * tierBoost);
+      return { id, kind, icon: "👥", label: `Servir ${target} clients`, target, progress: 0, deadline: now + duration, duration, rewardCash };
+    }
+    if (kind === "earn") {
+      const target = Math.round((300 + Math.random() * 400) * t.fareMult * (1 + tierIdx * 0.6));
+      const duration = (60 + target / 8) * 1000;
+      const rewardCash = Math.round(target * 0.55);
+      return { id, kind, icon: "💵", label: `Gagner ${fmt(target)}$`, target, progress: 0, deadline: now + duration, duration, rewardCash };
+    }
+    // streak: course rapide x2 pendant N sec
+    const target = 2 + Math.floor(Math.random() * 3);
+    const duration = (35 + target * 10) * 1000;
+    const rewardCash = Math.round(target * 100 * t.fareMult * tierBoost);
+    return {
+      id, kind, icon: "🔥",
+      label: `Enchaîner ${target} courses`,
+      target, progress: 0, deadline: now + duration, duration,
+      rewardCash,
+      rewardMult: 2, rewardMultSec: 20,
+    };
+  };
+
+
   // Mesure de la longueur du path principal au montage
   useEffect(() => {
     if (measureRef.current) {
