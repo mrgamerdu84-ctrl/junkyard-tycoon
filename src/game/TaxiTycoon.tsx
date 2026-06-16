@@ -278,6 +278,7 @@ export default function TaxiTycoon() {
   const clientsRef = useRef<Client[]>([]);
   const nextIdRef = useRef(1);
   const lastSpawnRef = useRef(0);
+  const lastTaxiDispatchRef = useRef(0);
   const [, forceRender] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [popups, setPopups] = useState<{ id: number; text: string; x: number; y: number }[]>([]);
