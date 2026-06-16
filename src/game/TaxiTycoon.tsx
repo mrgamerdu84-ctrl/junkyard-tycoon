@@ -1097,7 +1097,7 @@ export default function TaxiTycoon() {
                 <h3>🏁 Garage — Livrées de taxi</h3>
                 <button className="tt-modal-x" onClick={() => setGarageOpen(false)}>×</button>
               </div>
-              <p className="tt-modal-sub">Carrosserie jaune officielle. Choisis ta compagnie :</p>
+              <p className="tt-modal-sub">Choisis le modèle de ta flotte :</p>
               <div className="tt-livery-grid">
                 {LIVERIES.map((l) => (
                   <button
@@ -1105,24 +1105,7 @@ export default function TaxiTycoon() {
                     className={`tt-livery-card ${save.liveryId === l.id ? "selected" : ""}`}
                     onClick={() => setSave((s) => ({ ...s, liveryId: l.id }))}
                   >
-                    <svg viewBox="-50 -25 100 50" className="tt-livery-preview">
-                      <rect x="-40" y="-18" width="80" height="36" rx="5" fill="#f5c542" stroke="#9c7a1c" strokeWidth="1.2" />
-                      {l.stripe === "checker" && Array.from({ length: 14 }).map((_, i) => (
-                        <rect key={i} x={-40 + i * (80 / 14)} y={12} width={80 / 14} height="4"
-                          fill={i % 2 === 0 ? l.stripeColor : "#fff"} />
-                      ))}
-                      {l.stripe === "band" && (
-                        <>
-                          <rect x="-40" y="12" width="80" height="5" fill={l.stripeColor} />
-                          <rect x="-40" y="-17" width="80" height="5" fill={l.stripeColor} />
-                        </>
-                      )}
-                      {l.stripe === "dots" && Array.from({ length: 9 }).map((_, i) => (
-                        <circle key={i} cx={-36 + i * 9} cy={14} r="1.8" fill={l.stripeColor} />
-                      ))}
-                      <rect x="-12" y="-6" width="24" height="9" rx="1.5" fill={l.roofBg} stroke="#0a0c10" strokeWidth="0.5" />
-                      <text x="0" y="0.8" fontSize="6" fontWeight="900" textAnchor="middle" fill={l.roofFg}>{l.roofLabel}</text>
-                    </svg>
+                    <img src={l.image} alt={l.name} className="tt-livery-img" style={{ transform: l.faceRight ? undefined : "scaleX(-1)" }} />
                     <div className="tt-livery-name">{l.name}</div>
                     <div className="tt-livery-city">{l.city}</div>
                   </button>
