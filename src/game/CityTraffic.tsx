@@ -287,11 +287,19 @@ const PEDESTRIANS: PedSpec[] = [
   { pathIdx: 2, duration: 190, delay: -75, side: -1, shirt: "#06b6d4", pants: "#1f2937", skin: "#e8b48a", flip: true, scale: 0.9 },
   { pathIdx: 2, duration: 155, delay: -120,side:  1, shirt: "#ffffff", pants: "#0b1220", skin: "#a06c44", scale: 0.83 },
   { pathIdx: 2, duration: 200, delay: -170,side: -1, shirt: "#facc15", pants: "#374151", skin: "#f1c79b", flip: true, scale: 0.88 },
+  // Nouveaux piétons sur les axes principaux (paths 3, 4, 5)
+  { pathIdx: 3, duration: 170, delay: -20, side:  1, shirt: "#ef4444", pants: "#1f2937", skin: "#e8b48a", scale: 0.85 },
+  { pathIdx: 3, duration: 200, delay: -90, side: -1, shirt: "#0ea5e9", pants: "#111827", skin: "#c89372", flip: true, scale: 0.88 },
+  { pathIdx: 4, duration: 180, delay: -30, side:  1, shirt: "#22c55e", pants: "#0f172a", skin: "#f1c79b", scale: 0.86 },
+  { pathIdx: 4, duration: 210, delay: -110,side: -1, shirt: "#f97316", pants: "#374151", skin: "#a06c44", flip: true, scale: 0.84 },
+  { pathIdx: 5, duration: 150, delay: -15, side:  1, shirt: "#a855f7", pants: "#1e293b", skin: "#d4a37a", scale: 0.85 },
+  { pathIdx: 5, duration: 170, delay: -80, side: -1, shirt: "#facc15", pants: "#1f2937", skin: "#e8b48a", flip: true, scale: 0.87 },
 ];
 
 function PedestrianSVG({ shirt, pants, skin, side, scale = 1 }: { shirt: string; pants: string; skin: string; side: 1 | -1; scale?: number }) {
   // Offset Y dans le repère local = perpendiculaire au sens de marche (rotate="auto")
-  const oy = side * 22;
+  // Augmenté à 38 pour bien sortir de la chaussée et se poser sur le trottoir.
+  const oy = side * 38;
   return (
     <g transform={`translate(0,${oy}) scale(${scale})`}>
       <ellipse cx="0" cy="6" rx="4.5" ry="1.6" fill="rgba(0,0,0,0.5)" />
