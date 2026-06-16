@@ -64,6 +64,24 @@ const SAVE_KEY = "taxi-tycoon-v1";
 const BASE_SPEED = 60; // px (sur viewBox 1920) par seconde
 const SPEED_UPGRADE_COST_BASE = 800;
 const TAXI_COST_BASE = 600;
+const MAX_CONTRACTS = 3;
+
+type ContractKind = "clients" | "earn" | "streak";
+type Contract = {
+  id: number;
+  kind: ContractKind;
+  label: string;
+  icon: string;
+  target: number;
+  progress: number;
+  deadline: number;     // epoch ms
+  duration: number;     // ms initial
+  rewardCash: number;
+  rewardMult?: number;
+  rewardMultSec?: number;
+};
+
+type ActiveBoost = { mult: number; until: number } | null;
 
 type SaveData = {
   money: number;
@@ -73,6 +91,7 @@ type SaveData = {
   taxiSpeedLvl: number;
   taxis: { colorId: string }[];
   defaultColor: string;
+  contractsCompleted: number;
 };
 
 const DEFAULT_SAVE: SaveData = {
@@ -83,6 +102,7 @@ const DEFAULT_SAVE: SaveData = {
   taxiSpeedLvl: 0,
   taxis: [{ colorId: "yellow" }],
   defaultColor: "yellow",
+  contractsCompleted: 0,
 };
 
 function loadSave(): SaveData {
@@ -175,6 +195,49 @@ export default function TaxiTycoon() {
   const [toast, setToast] = useState<string | null>(null);
   const [popups, setPopups] = useState<{ id: number; text: string; x: number; y: number }[]>([]);
   const popIdRef = useRef(0);
+
+  // Contracts state
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const contractsRef = useRef<Contract[]>([]);
+  contractsRef.current = contracts;
+  const [boost, setBoost] = useState<ActiveBoost>(null);
+  const boostRef = useRef<ActiveBoost>(null);
+  boostRef.current = boost;
+  const [nowTick, setNowTick] = useState(Date.now());
+  const contractIdRef = useRef(1);
+
+  const genContract = (tierIdx: number): Contract => {
+    const now = Date.now();
+    const t = DEPOT_TIERS[tierIdx];
+    const kinds: ContractKind[] = ["clients", "earn", "streak"];
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    const id = contractIdRef.current++;
+    const tierBoost = 1 + tierIdx * 0.3;
+    if (kind === "clients") {
+      const target = Math.round((3 + Math.floor(Math.random() * 4)) * (1 + tierIdx * 0.5));
+      const duration = (45 + target * 8) * 1000;
+      const rewardCash = Math.round(target * 80 * t.fareMult * tierBoost);
+      return { id, kind, icon: "👥", label: `Servir ${target} clients`, target, progress: 0, deadline: now + duration, duration, rewardCash };
+    }
+    if (kind === "earn") {
+      const target = Math.round((300 + Math.random() * 400) * t.fareMult * (1 + tierIdx * 0.6));
+      const duration = (60 + target / 8) * 1000;
+      const rewardCash = Math.round(target * 0.55);
+      return { id, kind, icon: "💵", label: `Gagner ${fmt(target)}$`, target, progress: 0, deadline: now + duration, duration, rewardCash };
+    }
+    // streak: course rapide x2 pendant N sec
+    const target = 2 + Math.floor(Math.random() * 3);
+    const duration = (35 + target * 10) * 1000;
+    const rewardCash = Math.round(target * 100 * t.fareMult * tierBoost);
+    return {
+      id, kind, icon: "🔥",
+      label: `Enchaîner ${target} courses`,
+      target, progress: 0, deadline: now + duration, duration,
+      rewardCash,
+      rewardMult: 2, rewardMultSec: 20,
+    };
+  };
+
 
   // Mesure de la longueur du path principal au montage
   useEffect(() => {
@@ -305,13 +368,22 @@ export default function TaxiTycoon() {
           } else if (taxi.mode === "to_dest") {
             const c = clientsRef.current.find((x) => x.id === taxi.clientId);
             if (c && measureRef.current) {
+              const activeBoost = boostRef.current && boostRef.current.until > now ? boostRef.current.mult : 1;
+              const finalFare = Math.round(c.fare * activeBoost);
               const p = measureRef.current.getPointAtLength(c.dropoff);
-              popFloat(`+${fmt(c.fare)}$`, p.x, p.y);
+              popFloat(`+${fmt(finalFare)}$${activeBoost > 1 ? " ×" + activeBoost : ""}`, p.x, p.y);
               setSave((s) => ({
                 ...s,
-                money: s.money + c.fare,
-                totalEarned: s.totalEarned + c.fare,
+                money: s.money + finalFare,
+                totalEarned: s.totalEarned + finalFare,
                 customersServed: s.customersServed + 1,
+              }));
+              // Update contracts progress
+              setContracts((cs) => cs.map((ct) => {
+                if (ct.deadline < now) return ct;
+                if (ct.kind === "clients" || ct.kind === "streak") return { ...ct, progress: ct.progress + 1 };
+                if (ct.kind === "earn") return { ...ct, progress: ct.progress + finalFare };
+                return ct;
               }));
               clientsRef.current = clientsRef.current.filter((x) => x.id !== c.id);
             }
@@ -389,6 +461,51 @@ export default function TaxiTycoon() {
   const setColor = (id: string) => {
     setSave((s) => ({ ...s, defaultColor: id, taxis: s.taxis.map((t) => ({ colorId: id })) }));
   };
+
+  // === Boucle contrats : refresh slots + expiration + complétion ===
+  useEffect(() => {
+    const iv = window.setInterval(() => {
+      const now = Date.now();
+      setNowTick(now);
+      // Boost expiration
+      setBoost((b) => (b && b.until <= now ? null : b));
+      // Évalue complétion + expiration + refill
+      setContracts((cs) => {
+        let changed = false;
+        const kept: Contract[] = [];
+        for (const c of cs) {
+          if (c.progress >= c.target) {
+            // Récompense
+            setSave((s) => ({ ...s, money: s.money + c.rewardCash, contractsCompleted: s.contractsCompleted + 1 }));
+            if (c.rewardMult && c.rewardMultSec) {
+              setBoost({ mult: c.rewardMult, until: now + c.rewardMultSec * 1000 });
+            }
+            showToast(`✅ Contrat réussi : +${fmt(c.rewardCash)}$${c.rewardMult ? ` • x${c.rewardMult} ${c.rewardMultSec}s` : ""}`);
+            changed = true;
+            continue;
+          }
+          if (c.deadline <= now) {
+            showToast(`⏱️ Contrat expiré`);
+            changed = true;
+            continue;
+          }
+          kept.push(c);
+        }
+        // Refill jusqu'à MAX
+        while (kept.length < MAX_CONTRACTS) {
+          kept.push(genContract(saveRef.current.depotTier));
+          changed = true;
+        }
+        return changed ? kept : cs;
+      });
+    }, 500);
+    return () => clearInterval(iv);
+  }, []);
+
+  const cancelContract = (id: number) => {
+    setContracts((cs) => cs.filter((c) => c.id !== id));
+  };
+
 
   return (
     <>
@@ -497,6 +614,42 @@ export default function TaxiTycoon() {
           <div className="tt-depot-stats">
             Tarifs ×{tier.fareMult.toFixed(1)} • Capa {tier.maxTaxis} taxis
           </div>
+        </div>
+
+        {/* === Contrats === */}
+        <div className="tt-contracts">
+          <div className="tt-contracts-head">
+            <span>📋 CONTRATS</span>
+            {boost && boost.until > nowTick && (
+              <span className="tt-boost">x{boost.mult} {Math.max(0, Math.ceil((boost.until - nowTick) / 1000))}s</span>
+            )}
+          </div>
+          {contracts.map((c) => {
+            const remain = Math.max(0, c.deadline - nowTick);
+            const remainSec = Math.ceil(remain / 1000);
+            const timePct = Math.max(0, Math.min(1, remain / c.duration));
+            const progPct = Math.max(0, Math.min(1, c.progress / c.target));
+            const urgent = remainSec <= 10;
+            const progressLabel = c.kind === "earn"
+              ? `${fmt(c.progress)} / ${fmt(c.target)}$`
+              : `${c.progress} / ${c.target}`;
+            return (
+              <div key={c.id} className={`tt-contract ${urgent ? "urgent" : ""}`}>
+                <div className="tt-c-row">
+                  <span className="tt-c-icon">{c.icon}</span>
+                  <span className="tt-c-label">{c.label}</span>
+                  <button className="tt-c-x" onClick={() => cancelContract(c.id)} title="Abandonner">✕</button>
+                </div>
+                <div className="tt-c-bar"><div className="tt-c-bar-fill" style={{ width: `${progPct * 100}%` }} /></div>
+                <div className="tt-c-meta">
+                  <span>{progressLabel}</span>
+                  <span className="tt-c-reward">+{fmt(c.rewardCash)}${c.rewardMult ? ` • x${c.rewardMult}` : ""}</span>
+                </div>
+                <div className="tt-c-time"><div className="tt-c-time-fill" style={{ width: `${timePct * 100}%` }} /></div>
+                <div className="tt-c-time-lbl">{remainSec}s</div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="tt-actions">
@@ -622,6 +775,68 @@ export default function TaxiTycoon() {
           0% { opacity: 0; transform: translate(-50%, -40%); }
           15%, 80% { opacity: 1; transform: translate(-50%, -50%); }
           100% { opacity: 0; transform: translate(-50%, -60%); }
+        }
+
+        .tt-contracts {
+          position: absolute; top: 56px; right: 10px;
+          width: 210px;
+          display: flex; flex-direction: column; gap: 6px;
+          pointer-events: auto;
+        }
+        .tt-contracts-head {
+          display: flex; justify-content: space-between; align-items: center;
+          font-size: 10px; font-weight: 900; letter-spacing: 1px;
+          color: #fde68a; padding: 0 4px;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+        }
+        .tt-boost {
+          background: linear-gradient(180deg, #f59e0b, #b45309);
+          color: #1a1d22; padding: 2px 7px; border-radius: 999px;
+          font-size: 10px; font-weight: 900;
+          box-shadow: 0 0 8px rgba(245,158,11,0.7);
+          animation: ttBoostPulse 1s ease-in-out infinite;
+        }
+        @keyframes ttBoostPulse { 50% { transform: scale(1.06); } }
+        .tt-contract {
+          background: linear-gradient(180deg, rgba(20,22,28,0.95), rgba(8,9,12,0.95));
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 8px; padding: 6px 8px;
+          box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+          position: relative;
+        }
+        .tt-contract.urgent { border-color: #ef4444; box-shadow: 0 0 12px rgba(239,68,68,0.5); }
+        .tt-c-row { display: flex; align-items: center; gap: 6px; }
+        .tt-c-icon { font-size: 14px; }
+        .tt-c-label { flex: 1; font-size: 11px; font-weight: 800; color: #fff; line-height: 1.15; }
+        .tt-c-x {
+          background: transparent; border: none; color: #6b7280; cursor: pointer;
+          font-size: 12px; padding: 0 2px; line-height: 1;
+        }
+        .tt-c-x:hover { color: #ef4444; }
+        .tt-c-bar {
+          height: 5px; background: rgba(255,255,255,0.08);
+          border-radius: 3px; overflow: hidden; margin-top: 5px;
+        }
+        .tt-c-bar-fill {
+          height: 100%; background: linear-gradient(90deg, #10b981, #34d399);
+          transition: width 0.3s ease;
+        }
+        .tt-c-meta {
+          display: flex; justify-content: space-between;
+          font-size: 9.5px; font-weight: 700; margin-top: 3px;
+          color: #b0b4ba;
+        }
+        .tt-c-reward { color: #fde68a; }
+        .tt-c-time {
+          height: 3px; background: rgba(255,255,255,0.06);
+          border-radius: 2px; overflow: hidden; margin-top: 4px;
+        }
+        .tt-c-time-fill {
+          height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b);
+        }
+        .tt-c-time-lbl {
+          position: absolute; top: 4px; right: 22px;
+          font-size: 9px; font-weight: 900; color: #f59e0b;
         }
       `}</style>
     </>
