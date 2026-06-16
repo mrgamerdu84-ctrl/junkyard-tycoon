@@ -94,12 +94,9 @@ export type Livery = {
 };
 
 export const LIVERIES: Livery[] = [
-  { id: "classic",  name: "Classic Cab",   city: "Origine",     roofLabel: "TAXI",      roofBg: "#1a1d22", roofFg: "#fde047", stripe: "none",    stripeColor: "#1a1d22" },
-  { id: "nyc",      name: "Yellow Cab",    city: "New York",    roofLabel: "NYC TAXI",  roofBg: "#1a1d22", roofFg: "#ffffff", stripe: "checker", stripeColor: "#1a1d22" },
-  { id: "london",   name: "Black Cab Co.", city: "London",      roofLabel: "TAXI",      roofBg: "#0a0c10", roofFg: "#ffffff", stripe: "band",    stripeColor: "#0a0c10" },
-  { id: "paris",    name: "G7 Cab",        city: "Paris",       roofLabel: "G7",        roofBg: "#0f3a8a", roofFg: "#ffffff", stripe: "band",    stripeColor: "#0f3a8a" },
-  { id: "tokyo",    name: "Nihon Kotsu",   city: "Tokyo",       roofLabel: "東京",       roofBg: "#c8102e", roofFg: "#ffffff", stripe: "dots",    stripeColor: "#c8102e" },
-  { id: "rome",     name: "Roma Taxi",     city: "Roma",        roofLabel: "ROMA",      roofBg: "#16a34a", roofFg: "#ffffff", stripe: "band",    stripeColor: "#16a34a" },
+  { id: "classic",  name: "Classic Cab",   city: "Origine",     roofLabel: "TAXI",      roofBg: "#1a1d22", roofFg: "#fde047", stripe: "none",    stripeColor: "#1a1d22", image: TAXI_YELLOW_URL, faceRight: true  },
+  { id: "executive", name: "Executive",    city: "Berline noire", roofLabel: "VIP",     roofBg: "#0a0c10", roofFg: "#fde047", stripe: "none",    stripeColor: "#0a0c10", image: TAXI_BLACK_URL,  faceRight: false },
+  { id: "sport",    name: "Sport Cab",     city: "Coupé rouge",  roofLabel: "TAXI",     roofBg: "#1a1d22", roofFg: "#ffffff", stripe: "none",    stripeColor: "#1a1d22", image: TAXI_RED_URL,    faceRight: false },
 ];
 
 type SaveData = {
