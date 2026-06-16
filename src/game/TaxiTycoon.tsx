@@ -1143,7 +1143,7 @@ export default function TaxiTycoon() {
 
 
         <div className="tt-actions">
-          <button className="tt-btn primary" onClick={buyTaxi} disabled={save.money < taxiBuyCost || taxiCount >= tier.maxTaxis}>
+          <button className="tt-btn primary" onClick={buyTaxi} disabled={save.money < taxiBuyCost || taxiCount >= effectiveMaxTaxis}>
             <span className="tt-btn-ico">🚕</span>
             <span className="tt-btn-lbl">Acheter taxi</span>
             <span className="tt-btn-cost">{fmt(taxiBuyCost)}$</span>
