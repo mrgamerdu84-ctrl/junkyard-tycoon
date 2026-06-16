@@ -179,6 +179,27 @@ export default function AdminPanel() {
               </>
             )}
 
+            {tab === "rival" && (
+              <>
+                <label className="adm-toggle" style={{ marginBottom: 10 }}>
+                  <input type="checkbox" checked={cfg.rivalEnabled}
+                    onChange={(e) => setAdmin({ rivalEnabled: e.target.checked })} />
+                  Activer l'entreprise concurrente (IA)
+                </label>
+                <Slider label="Taxis IA" value={cfg.rivalTaxiCount} min={1} max={6} step={1}
+                  format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ rivalTaxiCount: v })} />
+                <Slider label="Temps de réaction" hint="Délai avant que l'IA ne vole une course"
+                  value={cfg.rivalReactionTime} min={1} max={15} step={0.5}
+                  format={(v) => v.toFixed(1) + " s"} onChange={(v) => setAdmin({ rivalReactionTime: v })} />
+                <Slider label="Vitesse IA" value={cfg.rivalSpeedMult} min={0.5} max={2.5} step={0.05}
+                  format={(v) => "×" + v.toFixed(2)} onChange={(v) => setAdmin({ rivalSpeedMult: v })} />
+                <Slider label="QG Rival — X" value={cfg.rivalHQX} min={0} max={1920} step={1}
+                  format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ rivalHQX: v })} />
+                <Slider label="QG Rival — Y" value={cfg.rivalHQY} min={0} max={1080} step={1}
+                  format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ rivalHQY: v })} />
+              </>
+            )}
+
 
             <button className="adm-reset" onClick={resetAdmin}>↺ Réinitialiser les valeurs</button>
           </div>
