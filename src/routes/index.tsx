@@ -508,7 +508,7 @@ function JunkyCityEmpire() {
 
       <div className="jce-map">
         <img className="jce-map-img" src={citymap} alt="Carte Junky City Empire" />
-        <City3D />
+        <CityTraffic />
         {/* Enseignes Premium Glass posées sur la map */}
         {ZONES.map((z) => {
           const st = states[z.id];
