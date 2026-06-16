@@ -296,7 +296,7 @@ export default function CityTraffic() {
     const lens = pathRefs.current.map((p: SVGPathElement | null) => (p ? p.getTotalLength() : 1));
     if (lens.some((l: number) => l <= 1)) return;
 
-    const states: CarState[] = CARS.map((spec, i) => {
+    const states: CarState[] = activeCars.map((spec, i) => {
       const pathLen = lens[spec.pathIdx];
       const baseSpeed = pathLen / spec.duration; // px/s
       // delay négatif => avance dans l'animation : s = -delay * baseSpeed
@@ -372,7 +372,7 @@ export default function CityTraffic() {
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [activeCars.length]);
 
   return (
     <svg
@@ -411,7 +411,7 @@ export default function CityTraffic() {
         ))}
       </g>
 
-      {CARS.map((car, i) => (
+      {activeCars.map((car, i) => (
         <g
           key={i}
           filter="url(#jce-soft-shadow)"
