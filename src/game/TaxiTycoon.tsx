@@ -122,7 +122,7 @@ function fmt(n: number) {
 
 function TaxiSprite({
   body,
-  trim,
+  trim: _trim,
   withClient,
   moving,
 }: {
@@ -131,14 +131,14 @@ function TaxiSprite({
   withClient: boolean;
   moving: boolean;
 }) {
-  // Image top-down réelle du taxi. L'image native pointe le capot vers le haut ;
-  // on la tourne de 90° pour que "forward" du sprite (angle 0 = vers la droite)
-  // corresponde au sens de déplacement le long du path.
-  const W = 64; // longueur du taxi (sens de la marche)
-  const H = 38; // largeur du taxi
+  // Image top-down réelle du taxi (capot vers le haut dans le PNG natif).
+  // On tourne de 90° pour que l'angle 0 (vers la droite) corresponde au
+  // sens de marche le long du path.
+  const W = 68; // longueur du taxi (sens de la marche)
+  const H = 34; // largeur du taxi
   const uid = useId().replace(/:/g, "");
-  const maskId = `taxi-mask-${uid}`;
-  const needTint = body.toLowerCase() !== "#f5c542";
+  const clipId = `taxi-clip-${uid}`;
+  const isYellow = body.toLowerCase() === "#f5c542";
   return (
     <g>
       {/* lignes de vitesse derrière le taxi quand il roule */}
@@ -155,8 +155,9 @@ function TaxiSprite({
           </line>
         </g>
       )}
-      <ellipse cx="0" cy="2" rx={W / 2 + 2} ry={H / 2 - 2} fill="rgba(0,0,0,0.45)" />
-      {/* groupe carrosserie avec léger bobbing de suspension quand le taxi roule */}
+      {/* ombre portée */}
+      <ellipse cx="0" cy="3" rx={W / 2 + 2} ry={H / 2 - 1} fill="rgba(0,0,0,0.45)" />
+      {/* carrosserie + léger bobbing de suspension */}
       <g>
         {moving && (
           <animateTransform
@@ -167,39 +168,30 @@ function TaxiSprite({
             repeatCount="indefinite"
           />
         )}
-        <g transform="rotate(90)">
-          {needTint && (
-            <defs>
-              <mask id={maskId} maskUnits="userSpaceOnUse">
-                <image
-                  href={taxiTopdown}
-                  x={-H / 2}
-                  y={-W / 2}
-                  width={H}
-                  height={W}
-                  preserveAspectRatio="xMidYMid meet"
-                />
-              </mask>
-            </defs>
-          )}
+        <defs>
+          <clipPath id={clipId}>
+            <rect x={-W / 2} y={-H / 2} width={W} height={H} rx="4" />
+          </clipPath>
+        </defs>
+        <g transform="rotate(90)" clipPath={`url(#${clipId})`}>
           <image
             href={taxiTopdown}
-            x={-H / 2}
-            y={-W / 2}
-            width={H}
-            height={W}
+            x={-H / 2 - 1}
+            y={-W / 2 - 2}
+            width={H + 2}
+            height={W + 4}
             preserveAspectRatio="xMidYMid meet"
           />
-          {needTint && (
+          {/* teinte uniquement pour les couleurs non-jaunes — opacité douce */}
+          {!isYellow && (
             <rect
-              x={-H / 2}
-              y={-W / 2}
-              width={H}
-              height={W}
+              x={-H / 2 - 1}
+              y={-W / 2 - 2}
+              width={H + 2}
+              height={W + 4}
               fill={body}
-              opacity={0.4}
+              opacity={0.55}
               style={{ mixBlendMode: "multiply" }}
-              mask={`url(#${maskId})`}
             />
           )}
         </g>
@@ -210,7 +202,6 @@ function TaxiSprite({
           </g>
         )}
       </g>
-      <ellipse cx="0" cy={H / 2 - 1} rx={W / 2 - 4} ry="1.2" fill={trim} opacity="0.35" />
     </g>
   );
 }
