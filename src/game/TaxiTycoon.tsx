@@ -142,7 +142,7 @@ function TaxiSprite({
   // corresponde au sens de déplacement le long du path.
   const W = 64; // longueur du taxi (sens de la marche)
   const H = 38; // largeur du taxi
-  const uid = React.useId().replace(/:/g, "");
+  const uid = useId().replace(/:/g, "");
   const maskId = `taxi-mask-${uid}`;
   const needTint = body.toLowerCase() !== "#f5c542";
   return (
