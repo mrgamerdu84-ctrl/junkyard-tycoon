@@ -423,7 +423,7 @@ export default function City3D({ drawRoadStrips = false }: City3DProps) {
     >
       <FitCam />
       <DayNight onPhase={(d) => setNight(1 - d)} />
-      <Environment preset="city" />
+      
 
       {drawRoadStrips && <RoadStrips />}
 
