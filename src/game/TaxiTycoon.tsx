@@ -1090,6 +1090,21 @@ export default function TaxiTycoon() {
           🏁
         </button>
 
+        {/* Musique de fond */}
+        <audio ref={audioRef} src={MUSIC_URL} loop preload="auto" />
+        <button
+          className="tt-music-fab"
+          onClick={() => {
+            const a = audioRef.current;
+            if (!a) return;
+            if (musicOn) { a.pause(); setMusicOn(false); }
+            else { a.volume = 0.45; a.play().catch(() => {}); setMusicOn(true); }
+          }}
+          title={musicOn ? "Couper la musique" : "Activer la musique"}
+        >
+          {musicOn ? "🎵" : "🔇"}
+        </button>
+
         {garageOpen && (
           <div className="tt-modal-overlay" onClick={() => setGarageOpen(false)}>
             <div className="tt-modal" onClick={(e) => e.stopPropagation()}>
