@@ -352,7 +352,8 @@ export default function TaxiTycoon() {
     // tarif basé sur la distance approximative + tier + admin
     const distNorm = 0.4 + Math.random() * 0.6;
     const adm = getAdmin();
-    const fare = Math.round((25 + distNorm * 220) * t.fareMult * adm.clientFareMult);
+    const revBonus = 1 + 0.10 * (saveRef.current.hqRevenueLvl ?? 0);
+    const fare = Math.round((25 + distNorm * 220) * t.fareMult * adm.clientFareMult * revBonus);
     const duration = (22 + Math.min(20, fare / 30)) * 1000;
     return {
       id, pickupPath, pickup, dropoffPath, dropoff, fare,
