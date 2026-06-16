@@ -70,6 +70,10 @@ export const DEFAULT_ADMIN: AdminConfig = {
   rivalTaxiCount: 2,
   rivalReactionTime: 5,
   rivalSpeedMult: 1,
+
+  circuitPoints: [],
+  circuitTaxiCount: 0,
+  circuitSpeedMult: 1,
 };
 
 const KEY = "taxi-tycoon-admin-v2";
