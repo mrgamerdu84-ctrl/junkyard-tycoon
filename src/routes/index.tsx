@@ -496,10 +496,12 @@ function JunkyCityEmpire() {
           100% { transform: translateY(180px) scaleY(1.4); opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .jce-wash-fx *, .jce-bubble, .jce-wash-foam, .jce-jet, .jce-mist, .jce-wash-shine, .jce-wash-tint, .jce-drop {
+          .jce-wash-fx *, .jce-bubble, .jce-wash-foam, .jce-jet, .jce-mist, .jce-wash-shine, .jce-wash-tint, .jce-drop,
+          .jce-street-car, .jce-tile-car {
             animation: none !important;
           }
         }
+
 
 
         @media (min-width: 640px) {
@@ -521,7 +523,16 @@ function JunkyCityEmpire() {
         <div className="jce-avatar" />
       </header>
 
-      <img src={skyline} alt="Skyline de Junky City" className="jce-skyline" />
+      <div className="jce-skyline-wrap">
+        <img src={skyline} alt="Skyline de Junky City" className="jce-skyline" />
+      </div>
+      <div className="jce-street" aria-hidden="true">
+        <img src={car1} className="jce-street-car" style={{ animationDuration: "9s", animationDelay: "0s" }} alt="" />
+        <img src={car3} className="jce-street-car" style={{ animationDuration: "12s", animationDelay: "3s", bottom: "4px" }} alt="" />
+        <img src={car2} className="jce-street-car rev" style={{ animationDuration: "7s", animationDelay: "1s" }} alt="" />
+        <img src={car1} className="jce-street-car rev" style={{ animationDuration: "11s", animationDelay: "5s", top: "4px" }} alt="" />
+      </div>
+
 
       <div className="jce-grid">
         <button
@@ -591,10 +602,18 @@ function JunkyCityEmpire() {
           <img src={garage} alt="Junky City Garage" loading="lazy" />
         </button>
         <button
+          className={`jce-tile ${pulse === BUILDINGS[0].alt ? "jce-pulse" : ""}`}
+          onClick={() => collect(BUILDINGS[0])}
+        >
+          <img src={garage} alt="Junky City Garage" loading="lazy" />
+          <img src={car2} className="jce-tile-car" style={{ animationDuration: "5s" }} alt="" aria-hidden="true" />
+        </button>
+        <button
           className={`jce-tile ${pulse === BUILDINGS[3].alt ? "jce-pulse" : ""}`}
           onClick={() => collect(BUILDINGS[3])}
         >
           <img src={warehouse} alt="Junky City Warehouse" loading="lazy" />
+          <img src={car1} className="jce-tile-car" style={{ animationDuration: "6s", animationDelay: "1s" }} alt="" aria-hidden="true" />
         </button>
 
         <button
@@ -602,14 +621,16 @@ function JunkyCityEmpire() {
           onClick={() => collect(BUILDINGS[2])}
         >
           <img src={shop} alt="Junky Shop" loading="lazy" />
+          <img src={car3} className="jce-tile-car" style={{ animationDuration: "7s", animationDelay: "0.5s" }} alt="" aria-hidden="true" />
         </button>
         <button
           className={`jce-tile ${pulse === BUILDINGS[4].alt ? "jce-pulse" : ""}`}
           onClick={() => collect(BUILDINGS[4])}
         >
           <img src={parking} alt="Junky City Parking" loading="lazy" />
+          <img src={car1} className="jce-tile-car" style={{ animationDuration: "5.5s", animationDelay: "2s" }} alt="" aria-hidden="true" />
         </button>
-      </div>
+
 
       <div className="jce-play-wrap">
         <button className="jce-play-btn" onClick={play}>JOUER</button>
