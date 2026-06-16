@@ -152,7 +152,7 @@ function JunkyCityEmpire() {
       <style>{`
         .jce-root {
           min-height: 100vh;
-          background-color: #8a5a3b;
+          background: #1a1d22;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           color: white;
           user-select: none;
@@ -162,14 +162,15 @@ function JunkyCityEmpire() {
           position: sticky;
           top: 0;
           z-index: 20;
-          background: #8a5a3b;
+          background: linear-gradient(to bottom, #0f1115, #1a1d22);
           display: grid;
           grid-template-columns: auto 1fr auto;
           align-items: center;
           gap: 12px;
           padding: 10px 14px;
-          border-bottom: 2px solid rgba(0,0,0,0.15);
+          border-bottom: 1px solid rgba(255,255,255,0.08);
         }
+
         .jce-money {
           display: flex;
           align-items: center;
