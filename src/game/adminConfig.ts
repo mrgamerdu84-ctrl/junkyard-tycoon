@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 export type AdminConfig = {
   depotPosNorm: number;       // 0..1 — position du QG le long du path principal
-  civilVehicleCount: number;  // 0..24 — voitures civiles affichées
+  civilVehicleCount: number;  // 0..35 — voitures civiles affichées
   taxiSpeedMult: number;      // 0.5..3 — multiplicateur vitesse taxis
   spawnRateMult: number;      // 0.25..3 — < 1 = clients plus rapides ; > 1 = plus lents
   maxClientsBonus: number;    // 0..10 — clients additionnels autorisés en simultané
