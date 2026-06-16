@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import sharky from "@/assets/sharky.png";
-import City3D, { ZONES_3D, type Zone3D } from "@/game/City3D";
+import citymap from "@/assets/citymap.jpg";
+import CityTraffic from "@/game/CityTraffic";
+
 
 
 export const Route = createFileRoute("/")({
@@ -255,8 +257,10 @@ function JunkyCityEmpire() {
           box-shadow: 0 2px 0 rgba(0,0,0,0.5);
         }
 
-        .jce-map { position: relative; width: 100%; height: 100vh; background: #0c0d10; }
-        .jce-map-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .jce-map { position: relative; width: 100%; height: 100vh; background: #0c0d10; overflow: hidden; }
+        .jce-map-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; z-index: 1; }
+        .jce-night-tint { position: absolute; inset: 0; z-index: 2; pointer-events: none; mix-blend-mode: multiply; transition: background 1s ease; }
+
 
         /* === ENSEIGNES (Premium Glass Tycoon) === */
         .jce-zone {
@@ -503,62 +507,56 @@ function JunkyCityEmpire() {
       `}</style>
 
       <div className="jce-map">
-        <City3D
-          zones={ZONES_3D}
-          states={states}
-          niveau={niveau}
-          unlocks={Object.fromEntries(ZONES.map((z) => [z.id, z.unlock]))}
-          onZoneClick={(id) => {
-            const z = ZONES.find((x) => x.id === id);
-            if (z) gestionClicBatiment(z);
-          }}
-          renderLabel={(z3: Zone3D) => {
-            const z = ZONES.find((x) => x.id === z3.id);
-            if (!z) return null;
-            const st = states[z.id];
-            const locked = z.unlock > niveau;
-            const tier = st.estFini ? tierFor(niveau, z.unlock) : 0;
-            const fillPct = !st.estAchete ? 0 : st.estFini ? 100 : (st.clicsEnregistres / z.clicsTotalRequis) * 100;
-            let stateClass = "";
-            if (locked) stateClass = "locked";
-            else if (st.estFini) stateClass = "fini";
-            else if (st.estAchete) stateClass = "chantier";
-            else stateClass = "buyable";
-            return (
-              <div
-                className={`jce-zone ${stateClass} ${tier ? `tier-${tier}` : ""} ${flash === z.id ? "flash" : ""}`}
-                style={{ position: "relative", transform: "translate(-50%, -50%)" }}
-              >
-                {st.estFini && tier > 0 && (
-                  <div className="jce-tier-badge">{"★".repeat(tier)} N{tier}</div>
-                )}
-                {locked && <div className="jce-lock-tag">🔒 Verrouillé</div>}
-                <div className="jce-zone-title">
-                  {st.estFini && <span className="jce-fini-star">★</span>}
-                  {z.name}
-                </div>
-                {locked && <div className="jce-zone-status">Niveau requis : {z.unlock}</div>}
-                {!locked && !st.estAchete && (
-                  <div className="jce-cost-pill">Débloquer : {formatNum(z.coutAchat)} $</div>
-                )}
-                {!locked && st.estAchete && !st.estFini && (
-                  <>
-                    <div className="jce-progress-wrap">
-                      <div className="jce-progress-fill" style={{ width: `${fillPct}%` }} />
-                    </div>
-                    <div className="jce-zone-status">Construction... {st.clicsEnregistres} / {z.clicsTotalRequis}</div>
-                  </>
-                )}
-                {!locked && st.estFini && (
-                  <div className="jce-zone-status">Opérationnel · +{formatNum(z.gainParSeconde * tier)} $/s</div>
-                )}
-                {popups.filter((p) => p.zoneId === z.id).map((p) => (
-                  <div key={p.id} className="jce-coin-pop">{p.text}</div>
-                ))}
+        <img className="jce-map-img" src={citymap} alt="Carte Junky City Empire" />
+        <CityTraffic />
+        {/* Enseignes Premium Glass posées sur la map */}
+        {ZONES.map((z) => {
+          const st = states[z.id];
+          const locked = z.unlock > niveau;
+          const tier = st.estFini ? tierFor(niveau, z.unlock) : 0;
+          const fillPct = !st.estAchete ? 0 : st.estFini ? 100 : (st.clicsEnregistres / z.clicsTotalRequis) * 100;
+          let stateClass = "";
+          if (locked) stateClass = "locked";
+          else if (st.estFini) stateClass = "fini";
+          else if (st.estAchete) stateClass = "chantier";
+          else stateClass = "buyable";
+          return (
+            <div
+              key={z.id}
+              className={`jce-zone ${stateClass} ${tier ? `tier-${tier}` : ""} ${flash === z.id ? "flash" : ""}`}
+              style={{ top: z.top, left: z.left, zIndex: 6 }}
+              onClick={() => gestionClicBatiment(z)}
+            >
+              {st.estFini && tier > 0 && (
+                <div className="jce-tier-badge">{"★".repeat(tier)} N{tier}</div>
+              )}
+              {locked && <div className="jce-lock-tag">🔒 Verrouillé</div>}
+              <div className="jce-zone-title">
+                {st.estFini && <span className="jce-fini-star">★</span>}
+                {z.name}
               </div>
-            );
-          }}
-        />
+              {locked && <div className="jce-zone-status">Niveau requis : {z.unlock}</div>}
+              {!locked && !st.estAchete && (
+                <div className="jce-cost-pill">Débloquer : {formatNum(z.coutAchat)} $</div>
+              )}
+              {!locked && st.estAchete && !st.estFini && (
+                <>
+                  <div className="jce-progress-wrap">
+                    <div className="jce-progress-fill" style={{ width: `${fillPct}%` }} />
+                  </div>
+                  <div className="jce-zone-status">Construction... {st.clicsEnregistres} / {z.clicsTotalRequis}</div>
+                </>
+              )}
+              {!locked && st.estFini && (
+                <div className="jce-zone-status">Opérationnel · +{formatNum(z.gainParSeconde * tier)} $/s</div>
+              )}
+              {popups.filter((p) => p.zoneId === z.id).map((p) => (
+                <div key={p.id} className="jce-coin-pop">{p.text}</div>
+              ))}
+            </div>
+          );
+        })}
+
 
         <header className="jce-topbar">
           <div className="jce-profile-block">
