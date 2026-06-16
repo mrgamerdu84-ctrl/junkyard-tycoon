@@ -113,7 +113,14 @@ type SaveData = {
   defaultColor: string;
   jobsCompleted: number;
   liveryId: string;
+  // ====== Boutique QG ======
+  hqCapacityLvl: number;   // +1 taxi de capacité par niveau (0..5)
+  hqProductionLvl: number; // -15% cooldown sortie par niveau (0..5)
+  hqRevenueLvl: number;    // +10% revenu par niveau (0..5)
 };
+
+const HQ_UPGRADE_MAX = 5;
+const HQ_UPGRADE_BASE_COST = { capacity: 1200, production: 1500, revenue: 2000 } as const;
 
 const DEFAULT_SAVE: SaveData = {
   money: 250,
@@ -125,6 +132,9 @@ const DEFAULT_SAVE: SaveData = {
   defaultColor: "yellow",
   jobsCompleted: 0,
   liveryId: "classic",
+  hqCapacityLvl: 0,
+  hqProductionLvl: 0,
+  hqRevenueLvl: 0,
 };
 
 
