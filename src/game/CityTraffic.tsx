@@ -181,7 +181,7 @@ function HatchSVG({ color, accent, scale = 1 }: { color: string; accent: string;
   );
 }
 
-function Vehicle({ kind, color, accent, scale = 1 }: { kind: VehicleKind; color: string; accent: string; scale?: number }) {
+function Vehicle({ kind, color, accent: _accent, scale = 1 }: { kind: VehicleKind; color: string; accent: string; scale?: number }) {
   // Toutes les voitures PNJ utilisent désormais la même image top-down (sedan noir).
   // Le `kind` reste utilisé pour ajuster la longueur (van/truck plus longs).
   // L'image native a le capot en haut → on applique +90° pour aligner avec
