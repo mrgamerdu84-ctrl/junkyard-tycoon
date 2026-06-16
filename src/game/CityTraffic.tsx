@@ -281,8 +281,8 @@ export default function CityTraffic() {
   // Boucle de trafic : positions JS pilotées avec freinage progressif.
   useEffect(() => {
     // Mesurer les longueurs réelles des paths.
-    const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 1));
-    if (lens.some((l) => l <= 1)) return;
+    const lens = pathRefs.current.map((p: SVGPathElement | null) => (p ? p.getTotalLength() : 1));
+    if (lens.some((l: number) => l <= 1)) return;
 
     const states: CarState[] = CARS.map((spec, i) => {
       const pathLen = lens[spec.pathIdx];
