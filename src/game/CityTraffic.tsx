@@ -81,7 +81,7 @@ function CarSVG({ color, accent, scale = 1 }: { color: string; accent: string; s
 
 function TowTruckSVG({ color, accent }: { color: string; accent: string }) {
   return (
-    <g>
+    <g transform="scale(0.72)">
       <ellipse cx="0" cy="9" rx="44" ry="17" fill="rgba(0,0,0,0.46)" />
       <path d="M -45 -13 L 5 -17 L 12 15 L -42 16 Z" fill="#262b30" />
       <path d="M -38 -9 L -3 -11 L 1 10 L -35 11 Z" fill="#6b4a35" />
@@ -182,7 +182,7 @@ export default function CityTraffic() {
       <g filter="url(#jce-soft-shadow)">
         <TowTruckSVG color="#ff8800" accent="#7a3a00" />
         <animateMotion dur="34s" begin="-4s" repeatCount="indefinite" rotate="auto">
-        <mpath href="#jce-road-2" />
+        <mpath href="#jce-road-0" />
         </animateMotion>
       </g>
       <g filter="url(#jce-soft-shadow)">
