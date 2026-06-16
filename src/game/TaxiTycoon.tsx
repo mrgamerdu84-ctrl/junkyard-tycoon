@@ -455,6 +455,22 @@ export default function TaxiTycoon() {
     forceRender((n) => n + 1);
   }, [pathsReady, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, admin.hqX, admin.hqY]);
 
+  // Sync rival AI taxis fleet
+  useEffect(() => {
+    if (!pathsReady) return;
+    const target = admin.rivalEnabled ? Math.max(0, Math.min(6, admin.rivalTaxiCount)) : 0;
+    while (rivalTaxisRef.current.length < target) {
+      const pos = closestOnPath(0, admin.rivalHQX, admin.rivalHQY);
+      rivalTaxisRef.current.push({
+        id: 10000 + rivalTaxisRef.current.length,
+        pathIdx: 0, pos, target: pos, mode: "idle", jobId: null,
+      });
+    }
+    while (rivalTaxisRef.current.length > target) rivalTaxisRef.current.pop();
+    forceRender((n) => n + 1);
+  }, [pathsReady, admin.rivalEnabled, admin.rivalTaxiCount, admin.rivalHQX, admin.rivalHQY]);
+
+
 
   // Save persistence (debounced)
   useEffect(() => {
