@@ -15,6 +15,9 @@ export default function AdminPanel() {
   useEffect(() => {
     if (!placeMode) return;
     const onClick = (e: MouseEvent) => {
+      // Ignore les clics sur les contrôles flottants
+      const target = e.target as HTMLElement;
+      if (target.closest(".adm-place-controls")) return;
       const svg = document.querySelector(".tt-root svg") as SVGSVGElement | null;
       if (!svg) return;
       const pt = svg.createSVGPoint();
@@ -22,11 +25,9 @@ export default function AdminPanel() {
       const ctm = svg.getScreenCTM();
       if (!ctm) return;
       const p = pt.matrixTransform(ctm.inverse());
-      // Bornes du viewBox 1920×1080
       const x = Math.max(0, Math.min(1920, p.x));
       const y = Math.max(0, Math.min(1080, p.y));
       setAdmin({ hqUseFreePos: true, hqX: x, hqY: y });
-      setPlaceMode(false);
       e.stopPropagation();
       e.preventDefault();
     };
@@ -34,11 +35,14 @@ export default function AdminPanel() {
     return () => window.removeEventListener("click", onClick, true);
   }, [placeMode]);
 
-  // Quand on lance le placement, on ferme le panneau pour libérer la map.
   const startPlacement = () => {
     setPlaceMode(true);
     setOpen(false);
   };
+
+  const bumpScale = (d: number) => setAdmin({ hqScale: Math.max(0.3, Math.min(4, cfg.hqScale + d)) });
+  const bumpRot = (d: number) => setAdmin({ hqRotation: cfg.hqRotation + d });
+
 
 
   return (
