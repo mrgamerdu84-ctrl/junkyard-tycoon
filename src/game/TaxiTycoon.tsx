@@ -936,9 +936,11 @@ export default function TaxiTycoon() {
 
         .tt-contracts {
           position: absolute; top: 56px; right: 10px;
-          width: 210px;
+          width: 220px;
           display: flex; flex-direction: column; gap: 6px;
           pointer-events: auto;
+          max-height: calc(100% - 200px);
+          overflow-y: auto;
         }
         .tt-contracts-head {
           display: flex; justify-content: space-between; align-items: center;
@@ -946,14 +948,13 @@ export default function TaxiTycoon() {
           color: #fde68a; padding: 0 4px;
           text-shadow: 0 1px 2px rgba(0,0,0,0.9);
         }
-        .tt-boost {
-          background: linear-gradient(180deg, #f59e0b, #b45309);
-          color: #1a1d22; padding: 2px 7px; border-radius: 999px;
-          font-size: 10px; font-weight: 900;
-          box-shadow: 0 0 8px rgba(245,158,11,0.7);
-          animation: ttBoostPulse 1s ease-in-out infinite;
+        .tt-fleet { color: #9ca3af; font-size: 9px; letter-spacing: 0.5px; }
+        .tt-empty {
+          background: rgba(20,22,28,0.7);
+          border: 1px dashed rgba(255,255,255,0.12);
+          border-radius: 8px; padding: 10px;
+          font-size: 11px; color: #6b7280; text-align: center; font-style: italic;
         }
-        @keyframes ttBoostPulse { 50% { transform: scale(1.06); } }
         .tt-contract {
           background: linear-gradient(180deg, rgba(20,22,28,0.95), rgba(8,9,12,0.95));
           border: 1px solid rgba(255,255,255,0.1);
@@ -962,6 +963,7 @@ export default function TaxiTycoon() {
           position: relative;
         }
         .tt-contract.urgent { border-color: #ef4444; box-shadow: 0 0 12px rgba(239,68,68,0.5); }
+        .tt-contract.in-progress { border-color: rgba(59,130,246,0.5); opacity: 0.85; }
         .tt-c-row { display: flex; align-items: center; gap: 6px; }
         .tt-c-icon { font-size: 14px; }
         .tt-c-label { flex: 1; font-size: 11px; font-weight: 800; color: #fff; line-height: 1.15; }
@@ -970,14 +972,6 @@ export default function TaxiTycoon() {
           font-size: 12px; padding: 0 2px; line-height: 1;
         }
         .tt-c-x:hover { color: #ef4444; }
-        .tt-c-bar {
-          height: 5px; background: rgba(255,255,255,0.08);
-          border-radius: 3px; overflow: hidden; margin-top: 5px;
-        }
-        .tt-c-bar-fill {
-          height: 100%; background: linear-gradient(90deg, #10b981, #34d399);
-          transition: width 0.3s ease;
-        }
         .tt-c-meta {
           display: flex; justify-content: space-between;
           font-size: 9.5px; font-weight: 700; margin-top: 3px;
@@ -986,15 +980,27 @@ export default function TaxiTycoon() {
         .tt-c-reward { color: #fde68a; }
         .tt-c-time {
           height: 3px; background: rgba(255,255,255,0.06);
-          border-radius: 2px; overflow: hidden; margin-top: 4px;
+          border-radius: 2px; overflow: hidden; margin-top: 5px;
         }
         .tt-c-time-fill {
           height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b);
+          transition: width 0.25s linear;
         }
-        .tt-c-time-lbl {
-          position: absolute; top: 4px; right: 22px;
-          font-size: 9px; font-weight: 900; color: #f59e0b;
+        .tt-c-accept {
+          width: 100%; margin-top: 6px; padding: 6px 8px;
+          background: linear-gradient(180deg, #16a34a, #064e29);
+          border: 1px solid #022c17; border-radius: 6px;
+          color: #d1fae5; font-weight: 900; font-size: 11px;
+          cursor: pointer; letter-spacing: 0.4px;
+          transition: transform 0.08s ease, filter 0.15s;
         }
+        .tt-c-accept:hover:not(:disabled) { filter: brightness(1.15); }
+        .tt-c-accept:active:not(:disabled) { transform: translateY(1px); }
+        .tt-c-accept:disabled {
+          background: linear-gradient(180deg, #3a3f48, #14171c);
+          color: #6b7280; cursor: not-allowed; border-color: #14171c;
+        }
+
       `}</style>
     </>
   );
