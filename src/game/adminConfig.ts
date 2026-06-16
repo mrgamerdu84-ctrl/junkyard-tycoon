@@ -27,6 +27,14 @@ export type AdminConfig = {
   fuelConsumption: number;       // 0.1..3 — points de carburant consommés / seconde de roulage
   gasStationX: number;           // 0..1920 — position X de la station-service
   gasStationY: number;           // 0..1080 — position Y de la station-service
+
+  // ====== Entreprise concurrente (IA) ======
+  rivalEnabled: boolean;         // active la concurrence IA
+  rivalHQX: number;              // 0..1920
+  rivalHQY: number;              // 0..1080
+  rivalTaxiCount: number;        // 1..6 — nb de taxis IA
+  rivalReactionTime: number;     // 1..15 — délai (s) avant qu'un taxi IA ne snipe une course
+  rivalSpeedMult: number;        // 0.5..2.5
 };
 
 export const DEFAULT_ADMIN: AdminConfig = {
