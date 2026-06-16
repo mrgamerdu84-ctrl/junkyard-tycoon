@@ -284,6 +284,28 @@ function Depot({ tier, x, y, scale = 1, rotation = 0 }: { tier: DepotTier; x: nu
   );
 }
 
+function RivalDepot({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <ellipse cx="0" cy="48" rx="92" ry="16" fill="rgba(0,0,0,0.55)" />
+      <path d="M -82 38 L 82 38 L 102 48 L -102 48 Z" fill="#2a2024" stroke="#1a0a10" strokeWidth="1.2" />
+      <rect x="-72" y="-14" width="144" height="54" rx="2" fill="#3a1820" stroke="#1a0a10" strokeWidth="1.8" />
+      <path d="M -78 -14 L 0 -46 L 78 -14 Z" fill="#7a1020" stroke="#1a0a10" strokeWidth="1.8" />
+      <rect x="-54" y="-2" width="32" height="40" fill="#0a0608" stroke="#000" strokeWidth="1.4" />
+      <rect x="22" y="-2" width="32" height="40" fill="#0a0608" stroke="#000" strokeWidth="1.4" />
+      <rect x="-18" y="4" width="36" height="20" fill="#ff3040" opacity="0.9" stroke="#1a0a10" strokeWidth="1" />
+      <rect x="-54" y="-40" width="108" height="16" rx="2.5" fill="#dc1a2a" stroke="#1a0a10" strokeWidth="1.6" />
+      <text x="0" y="-28" fontSize="10" fontWeight="900" textAnchor="middle" fill="#fff" letterSpacing="1">RIVAL CABS</text>
+      <circle cx="58" cy="-30" r="10" fill="#0a0608" stroke="#ff3040" strokeWidth="2" />
+      <text x="58" y="-26" fontSize="12" textAnchor="middle">⚔️</text>
+      <line x1="-56" y1="-46" x2="-56" y2="-60" stroke="#1a0a10" strokeWidth="1.4" />
+      <circle cx="-56" cy="-61" r="2" fill="#ff3040">
+        <animate attributeName="opacity" values="1;0.2;1" dur="1.1s" repeatCount="indefinite" />
+      </circle>
+    </g>
+  );
+}
+
 export default function TaxiTycoon() {
   // Une ref par chemin disponible — permet de varier les trajets des taxis.
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
@@ -315,6 +337,16 @@ export default function TaxiTycoon() {
   jobsRef.current = jobs;
   const [nowTick, setNowTick] = useState(Date.now());
   const jobIdRef = useRef(1);
+
+  // === Concurrent IA ===
+  type RivalTaxi = { id: number; pathIdx: number; pos: number; target: number; mode: TaxiMode; jobId: number | null };
+  const rivalTaxisRef = useRef<RivalTaxi[]>([]);
+  const rivalJobsRef = useRef<Job[]>([]); // courses prises en charge par l'IA
+  const [rivalStolen, setRivalStolen] = useState(0);
+
+
+
+
 
   const genJob = (tierIdx: number): Job => {
     const now = Date.now();
@@ -422,6 +454,22 @@ export default function TaxiTycoon() {
     });
     forceRender((n) => n + 1);
   }, [pathsReady, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, admin.hqX, admin.hqY]);
+
+  // Sync rival AI taxis fleet
+  useEffect(() => {
+    if (!pathsReady) return;
+    const target = admin.rivalEnabled ? Math.max(0, Math.min(6, admin.rivalTaxiCount)) : 0;
+    while (rivalTaxisRef.current.length < target) {
+      const pos = closestOnPath(0, admin.rivalHQX, admin.rivalHQY);
+      rivalTaxisRef.current.push({
+        id: 10000 + rivalTaxisRef.current.length,
+        pathIdx: 0, pos, target: pos, mode: "idle", jobId: null,
+      });
+    }
+    while (rivalTaxisRef.current.length > target) rivalTaxisRef.current.pop();
+    forceRender((n) => n + 1);
+  }, [pathsReady, admin.rivalEnabled, admin.rivalTaxiCount, admin.rivalHQX, admin.rivalHQY]);
+
 
 
   // Save persistence (debounced)
@@ -566,7 +614,67 @@ export default function TaxiTycoon() {
         }
       }
 
+      // === IA Concurrent : tente de sniper les courses "offered" ===
+      if (adm.rivalEnabled && rivalTaxisRef.current.length > 0) {
+        const speed = (BASE_SPEED + 6) * adm.rivalSpeedMult;
+        const reactMs = Math.max(1, adm.rivalReactionTime) * 1000;
+        const nowMs = Date.now();
+
+        for (const r of rivalTaxisRef.current) {
+          if (r.mode === "idle") {
+            // cherche une course offerte assez ancienne pour être sniped
+            const candidate = jobsRef.current.find((j) => {
+              if (j.status !== "offered") return false;
+              const age = nowMs - (j.deadline - j.duration);
+              return age >= reactMs;
+            });
+            if (candidate) {
+              r.jobId = candidate.id;
+              r.pathIdx = candidate.pickupPath;
+              r.pos = closestOnPath(candidate.pickupPath, admin.rivalHQX, admin.rivalHQY);
+              r.target = candidate.pickup;
+              r.mode = "to_pickup";
+              // mémorise la course côté rival, puis la retire de la file joueur
+              rivalJobsRef.current.push(candidate);
+              setJobs((js) => js.filter((x) => x.id !== candidate.id));
+              setRivalStolen((n) => n + 1);
+              showToast("⚔️ Course volée par Rival Cabs !");
+            }
+            continue;
+          }
+
+          const diff = r.target - r.pos;
+          const step = speed * dt;
+          if (Math.abs(diff) <= step) {
+            r.pos = r.target;
+            if (r.mode === "to_pickup") {
+              const job = rivalJobsRef.current.find((x) => x.id === r.jobId);
+              if (job) {
+                const here = pathRefs.current[r.pathIdx]?.getPointAtLength(r.pos);
+                r.pathIdx = job.dropoffPath;
+                r.pos = here ? closestOnPath(job.dropoffPath, here.x, here.y) : 0;
+                r.target = job.dropoff;
+                r.mode = "to_dest";
+              } else {
+                r.mode = "returning";
+                r.target = closestOnPath(r.pathIdx, admin.rivalHQX, admin.rivalHQY);
+              }
+            } else if (r.mode === "to_dest") {
+              rivalJobsRef.current = rivalJobsRef.current.filter((x) => x.id !== r.jobId);
+              r.jobId = null;
+              r.target = closestOnPath(r.pathIdx, admin.rivalHQX, admin.rivalHQY);
+              r.mode = "returning";
+            } else if (r.mode === "returning") {
+              r.mode = "idle";
+            }
+          } else {
+            r.pos += Math.sign(diff) * step;
+          }
+        }
+      }
+
       forceRender((n) => (n + 1) % 1_000_000);
+
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -811,6 +919,24 @@ export default function TaxiTycoon() {
         {/* Dépôt */}
         {pathsReady && <Depot tier={tier} x={depotXY.x} y={depotXY.y - 18} scale={admin.hqScale} rotation={admin.hqRotation} />}
 
+        {/* QG concurrent */}
+        {pathsReady && admin.rivalEnabled && <RivalDepot x={admin.rivalHQX} y={admin.rivalHQY - 18} />}
+
+        {/* Taxis rivaux (couleur sombre + bandeau rouge) */}
+        {admin.rivalEnabled && rivalTaxisRef.current.map((r) => {
+          const p = getXYOn(r.pathIdx, r.pos);
+          const movingForward = r.target >= r.pos;
+          const angle = movingForward ? p.angle : p.angle + 180;
+          return (
+            <g key={r.id}>
+              <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
+                <TaxiSprite body="#dc1a2a" trim="#5a0810" withClient={r.mode === "to_dest"} moving={r.mode !== "idle"} />
+              </g>
+              <text x={p.x} y={p.y - 22} fontSize="9" textAnchor="middle" fill="#ff4d5c" fontWeight="900" stroke="#0a0608" strokeWidth="2" paintOrder="stroke">R</text>
+            </g>
+          );
+        })}
+
         {/* Taxis */}
         {taxisRef.current.map((taxi) => {
           const p = getXYOn(taxi.pathIdx, taxi.pos);
@@ -863,6 +989,12 @@ export default function TaxiTycoon() {
             <span className="tt-stat-icon">🚕</span>
             <span className="tt-stat-val">{taxiCount}/{tier.maxTaxis}</span>
           </div>
+          {admin.rivalEnabled && (
+            <div className="tt-stat" style={{ color: "#ff6b7a" }} title="Courses volées par Rival Cabs">
+              <span className="tt-stat-icon">⚔️</span>
+              <span className="tt-stat-val">{rivalStolen}</span>
+            </div>
+          )}
         </div>
 
         <div className="tt-depot-card">
