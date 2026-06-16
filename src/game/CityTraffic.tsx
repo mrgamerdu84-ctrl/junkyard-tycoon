@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAdminConfig } from "./adminConfig";
 import npcTopdown from "@/assets/car-npc-topdown.png";
+import npcRedTopdown from "@/assets/car-npc-red-topdown.png";
 
 /* eslint-disable prettier/prettier */
 
@@ -22,6 +23,7 @@ export const ROADS = [
 ];
 
 type VehicleKind = "sedan" | "van" | "truck" | "hatch";
+type VehicleVariant = "black" | "red";
 
 type CarSpec = {
   color: string;
@@ -32,6 +34,7 @@ type CarSpec = {
   flip?: boolean;
   scale?: number;
   kind: VehicleKind;
+  variant?: VehicleVariant;
 };
 
 // Circulation civile diversifiée — aucune teinte taxi jaune.
@@ -181,25 +184,41 @@ function HatchSVG({ color, accent, scale = 1 }: { color: string; accent: string;
   );
 }
 
-function Vehicle({ kind, color, accent: _accent, scale = 1 }: { kind: VehicleKind; color: string; accent: string; scale?: number }) {
-  // Toutes les voitures PNJ utilisent désormais la même image top-down (sedan noir).
-  // Le `kind` reste utilisé pour ajuster la longueur (van/truck plus longs).
-  // L'image native a le capot en haut → on applique +90° pour aligner avec
-  // l'angle de déplacement (angle 0 du parent = vers la droite).
-  // Une teinte `color` en multiply colore légèrement la carrosserie noire.
+function Vehicle({
+  kind,
+  color,
+  accent: _accent,
+  scale = 1,
+  variant = "black",
+}: {
+  kind: VehicleKind;
+  color: string;
+  accent: string;
+  scale?: number;
+  variant?: VehicleVariant;
+}) {
+  // Toutes les voitures PNJ utilisent des images top-down.
+  // - variant "black" : sedan noir (hood en haut dans l'image native) → rotate(+90)
+  // - variant "red"   : coupé rouge (hood en bas dans l'image native) → rotate(-90)
+  // Une teinte `color` en multiply colore légèrement la carrosserie.
   const baseLen = kind === "truck" ? 96 : kind === "van" ? 80 : kind === "hatch" ? 60 : 70;
   const baseWid = kind === "truck" ? 38 : kind === "van" ? 36 : 32;
   const W = baseLen;
   const H = baseWid;
-  // Pour éviter de "blanchir" le noir avec un multiply à forte opacité, on garde
-  // une teinte légère (le noir reste dominant pour les couleurs sombres).
-  const tintOpacity = color.toLowerCase() === "#000" || color.toLowerCase() === "#000000" ? 0 : 0.5;
+  const isRed = variant === "red";
+  const href = isRed ? npcRedTopdown : npcTopdown;
+  const innerRotate = isRed ? -90 : 90;
+  const lc = color.toLowerCase();
+  // Teinte légère, désactivée si la couleur est proche de la teinte native de l'image.
+  let tintOpacity = 0.5;
+  if (lc === "#000" || lc === "#000000") tintOpacity = 0;
+  if (isRed && (lc === "#d83a2a" || lc === "#b81c4a" || lc === "#e11d48")) tintOpacity = 0;
   return (
     <g transform={`scale(${scale})`}>
       <ellipse cx="0" cy="3" rx={W / 2 + 2} ry={H / 2 - 1} fill="rgba(0,0,0,0.4)" />
-      <g transform="rotate(90)">
+      <g transform={`rotate(${innerRotate})`}>
         <image
-          href={npcTopdown}
+          href={href}
           x={-H / 2}
           y={-W / 2}
           width={H}
@@ -216,7 +235,6 @@ function Vehicle({ kind, color, accent: _accent, scale = 1 }: { kind: VehicleKin
           style={{ mixBlendMode: "multiply" }}
         />
       </g>
-      {/* feux avant subtils */}
       <circle cx={W / 2 - 2} cy={-H / 4} r="1.4" fill="#fff7c0" opacity="0.85" />
       <circle cx={W / 2 - 2} cy={H / 4} r="1.4" fill="#fff7c0" opacity="0.85" />
     </g>
