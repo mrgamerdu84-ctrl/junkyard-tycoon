@@ -614,7 +614,71 @@ export default function TaxiTycoon() {
         }
       }
 
+      // === IA Concurrent : tente de sniper les courses "offered" ===
+      if (adm.rivalEnabled && rivalTaxisRef.current.length > 0) {
+        const speed = (BASE_SPEED + 6) * adm.rivalSpeedMult;
+        const reactMs = Math.max(1, adm.rivalReactionTime) * 1000;
+        const nowMs = Date.now();
+
+        for (const r of rivalTaxisRef.current) {
+          if (r.mode === "idle") {
+            // cherche une course offerte assez ancienne pour être sniped
+            const candidate = jobsRef.current.find((j) => {
+              if (j.status !== "offered") return false;
+              const age = nowMs - (j.deadline - j.duration);
+              return age >= reactMs;
+            });
+            if (candidate) {
+              r.jobId = candidate.id;
+              r.pathIdx = candidate.pickupPath;
+              r.pos = closestOnPath(candidate.pickupPath, admin.rivalHQX, admin.rivalHQY);
+              r.target = candidate.pickup;
+              r.mode = "to_pickup";
+              // retire la course de la file joueur
+              setJobs((js) => js.filter((x) => x.id !== candidate.id));
+              setRivalStolen((n) => n + 1);
+              showToast("⚔️ Course volée par Rival Cabs !");
+            }
+            continue;
+          }
+
+          const diff = r.target - r.pos;
+          const step = speed * dt;
+          if (Math.abs(diff) <= step) {
+            r.pos = r.target;
+            if (r.mode === "to_pickup") {
+              // bascule vers dropoff (on retrouve la course capturée)
+              // on l'a déjà retirée du state ; on stocke localement via jobId
+              // ici on relance simplement vers un point aléatoire du QG rival
+              // Pour faire propre on garde la dest dans la course rivalJobsRef.
+              const job = rivalJobsRef.current.find((x) => x.id === r.jobId);
+              if (job) {
+                r.pathIdx = job.dropoffPath;
+                r.pos = closestOnPath(job.dropoffPath, 0, 0) || 0;
+                const here = pathRefs.current[r.pathIdx]?.getPointAtLength(r.pos);
+                if (here) r.pos = closestOnPath(job.dropoffPath, here.x, here.y);
+                r.target = job.dropoff;
+                r.mode = "to_dest";
+              } else {
+                r.mode = "returning";
+                r.target = closestOnPath(r.pathIdx, admin.rivalHQX, admin.rivalHQY);
+              }
+            } else if (r.mode === "to_dest") {
+              rivalJobsRef.current = rivalJobsRef.current.filter((x) => x.id !== r.jobId);
+              r.jobId = null;
+              r.target = closestOnPath(r.pathIdx, admin.rivalHQX, admin.rivalHQY);
+              r.mode = "returning";
+            } else if (r.mode === "returning") {
+              r.mode = "idle";
+            }
+          } else {
+            r.pos += Math.sign(diff) * step;
+          }
+        }
+      }
+
       forceRender((n) => (n + 1) % 1_000_000);
+
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
