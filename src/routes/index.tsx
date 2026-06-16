@@ -338,12 +338,6 @@ function JunkyCityEmpire() {
           50% { filter: brightness(1.15); }
         }
 
-        .jce-traffic {
-          position: absolute; inset: 0;
-          width: 100%; height: 100%;
-          pointer-events: none; z-index: 3;
-        }
-        .jce-traffic .car { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7)); }
 
         .jce-coin-pop {
           position: absolute;
