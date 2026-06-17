@@ -2,6 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { useAdminConfig } from "./adminConfig";
 import npcTopdown from "@/assets/car-npc-topdown.png";
 import npcRedTopdown from "@/assets/car-npc-red-topdown.png";
+import {
+  initTrafficLights,
+  getTrafficLights,
+  getLightState,
+  shouldStopAhead,
+  nowSeconds,
+  type TrafficLight,
+} from "./trafficLights";
+
+// Paths "village" (haut de la map) : aucune voiture/piéton civil
+// ni course taxi ne doit s'y générer. On garde l'index pour ne pas casser
+// les autres références numériques.
+export const VILLAGE_PATHS = new Set<number>([1]);
 
 /* eslint-disable prettier/prettier */
 
@@ -335,28 +348,41 @@ type CarState = {
 
 export default function CityTraffic() {
   const [night, setNight] = useState(0.25);
+  const [lightsTick, setLightsTick] = useState(0);
   const admin = useAdminConfig();
-  const activeCars = CARS.slice(0, Math.max(0, Math.min(CARS.length, admin.civilVehicleCount)));
+  // Filtre les véhicules civils dont le path est en zone village.
+  const activeCars = CARS.filter(c => !VILLAGE_PATHS.has(c.pathIdx))
+    .slice(0, Math.max(0, Math.min(CARS.length, admin.civilVehicleCount)));
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const carNodes = useRef<(SVGGElement | null)[]>([]);
+  const [lights, setLights] = useState<TrafficLight[]>([]);
 
+  // Cycle jour/nuit 300s (5 minutes). Démarre en plein jour.
   useEffect(() => {
     let raf = 0;
     const tick = () => {
-      const t = (performance.now() % 180000) / 180000;
-      const daylight = Math.max(0, Math.sin(t * Math.PI * 2));
-      setNight(0.18 + (1 - daylight) * 0.72);
+      const t = (performance.now() % 300000) / 300000;
+      // décalage π/2 pour partir au midi (sin = 1)
+      const daylight = Math.max(0, Math.sin(t * Math.PI * 2 + Math.PI / 2));
+      setNight(0.1 + (1 - daylight) * 0.6);
+      setLightsTick(v => (v + 1) % 1000000);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, []);
 
+
   // Boucle de trafic : positions JS pilotées avec freinage progressif.
   useEffect(() => {
     // Mesurer les longueurs réelles des paths.
     const lens = pathRefs.current.map((p: SVGPathElement | null) => (p ? p.getTotalLength() : 1));
     if (lens.some((l: number) => l <= 1)) return;
+
+    // Initialise les feux rouges (singleton partagé avec TaxiTycoon).
+    initTrafficLights(pathRefs.current, lens);
+    setLights(getTrafficLights());
+
 
     const states: CarState[] = activeCars.map((spec, i) => {
       const pathLen = lens[spec.pathIdx];
@@ -402,7 +428,12 @@ export default function CityTraffic() {
           const safe = SAFE_GAP + myLen * 0.2;
           const brake = BRAKE_GAP + myLen * 0.2;
           let target = me.baseSpeed;
-          if (gap < brake) {
+          // Feu rouge / orange devant ?
+          const forward = !me.spec.flip;
+          const sigS = me.spec.flip ? me.pathLen - me.s : me.s;
+          if (shouldStopAhead(me.spec.pathIdx, sigS, forward, nowSeconds())) {
+            target = 0;
+          } else if (gap < brake) {
             const k = Math.max(0, (gap - safe) / (brake - safe));
             // anti-cascade : on ne s'aligne jamais sous le plancher du leader.
             const leaderEff = Math.max(ahead.speed, ahead.baseSpeed * MIN_SPEED_RATIO);
@@ -411,12 +442,14 @@ export default function CityTraffic() {
           }
           // lissage vers la cible : freinage > accélération
           const diff = target - me.speed;
-          const rate = diff < 0 ? BRAKE : ACCEL;
-          const maxStep = rate * me.baseSpeed * dt; // proportionnel à l'allure libre
+          const rate = diff < 0 ? BRAKE * (target === 0 ? 2.5 : 1) : ACCEL;
+          const maxStep = rate * me.baseSpeed * dt;
           me.speed += Math.max(-maxStep, Math.min(maxStep, diff));
-          // plancher anti-figeage : 35 % de baseSpeed
-          const floor = me.baseSpeed * MIN_SPEED_RATIO;
-          if (me.speed < floor) me.speed = floor;
+          // plancher anti-figeage sauf si stop forcé (feu rouge)
+          if (target > 0) {
+            const floor = me.baseSpeed * MIN_SPEED_RATIO;
+            if (me.speed < floor) me.speed = floor;
+          } else if (me.speed < 0) me.speed = 0;
         }
       }
 
@@ -490,8 +523,10 @@ export default function CityTraffic() {
         </g>
       ))}
 
-      {/* Piétons sur les trottoirs (offset perpendiculaire grâce à rotate="auto") */}
-      {PEDESTRIANS.map((ped, i) => (
+      {/* Piétons sur les trottoirs (densité moyenne : ~2x liste de base, sauf village) */}
+      {[...PEDESTRIANS, ...PEDESTRIANS.map(p => ({ ...p, delay: p.delay - 30, side: (p.side === 1 ? -1 : 1) as 1 | -1 }))]
+        .filter(p => !VILLAGE_PATHS.has(p.pathIdx))
+        .map((ped, i) => (
         <g key={`ped-${i}`}>
           <PedestrianSVG shirt={ped.shirt} pants={ped.pants} skin={ped.skin} side={ped.side} scale={ped.scale} />
           <animateMotion
@@ -507,7 +542,32 @@ export default function CityTraffic() {
         </g>
       ))}
 
-      <rect width="1920" height="1080" fill="#0a1530" opacity={night * 0.25} pointerEvents="none" />
+      {/* Feux rouges aux intersections */}
+      {lights.map((l) => {
+        // lightsTick force le re-render à chaque frame pour animer la couleur
+        void lightsTick;
+        const st = getLightState(l, nowSeconds());
+        const red = st === "red", orange = st === "orange", green = st === "green";
+        return (
+          <g key={`tl-${l.id}`} transform={`translate(${l.x},${l.y})`} pointerEvents="none">
+            <ellipse cx="0" cy="14" rx="14" ry="4" fill="rgba(0,0,0,0.45)" />
+            <rect x="-7" y="-22" width="14" height="36" rx="3" fill="#0e1217" stroke="#000" strokeWidth="1" />
+            <circle cx="0" cy="-14" r="3.4" fill={red ? "#ff2a2a" : "#2a0808"} opacity={red ? 1 : 0.4}>
+              {red && <animate attributeName="r" values="3.4;4.2;3.4" dur="1s" repeatCount="indefinite" />}
+            </circle>
+            <circle cx="0" cy="-4"  r="3.4" fill={orange ? "#ffb020" : "#2a1a00"} opacity={orange ? 1 : 0.4} />
+            <circle cx="0" cy="6"   r="3.4" fill={green ? "#22e36a" : "#0a2a14"} opacity={green ? 1 : 0.4} />
+            {/* halo lumineux la nuit */}
+            {night > 0.4 && (
+              <circle cx="0" cy={red ? -14 : orange ? -4 : 6} r="10"
+                fill={red ? "#ff2a2a" : orange ? "#ffb020" : "#22e36a"}
+                opacity={night * 0.35} />
+            )}
+          </g>
+        );
+      })}
+
+      <rect width="1920" height="1080" fill="#0a1530" opacity={Math.max(0, (night - 0.15)) * 0.55} pointerEvents="none" />
     </svg>
   );
 }
