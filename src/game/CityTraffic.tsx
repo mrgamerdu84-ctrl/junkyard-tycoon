@@ -426,7 +426,12 @@ export default function CityTraffic() {
           const safe = SAFE_GAP + myLen * 0.2;
           const brake = BRAKE_GAP + myLen * 0.2;
           let target = me.baseSpeed;
-          if (gap < brake) {
+          // Feu rouge / orange devant ?
+          const forward = !me.spec.flip;
+          const sigS = me.spec.flip ? me.pathLen - me.s : me.s;
+          if (shouldStopAhead(me.spec.pathIdx, sigS, forward, nowSeconds())) {
+            target = 0;
+          } else if (gap < brake) {
             const k = Math.max(0, (gap - safe) / (brake - safe));
             // anti-cascade : on ne s'aligne jamais sous le plancher du leader.
             const leaderEff = Math.max(ahead.speed, ahead.baseSpeed * MIN_SPEED_RATIO);
