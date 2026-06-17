@@ -1722,7 +1722,7 @@ export default function TaxiTycoon() {
           </div>
           <div className="tt-stat">
             <span className="tt-stat-icon">🚕</span>
-            <span className="tt-stat-val">{taxiCount}/{effectiveMaxTaxis}</span>
+            <span className="tt-stat-val">{taxiCount}/{effectiveMaxTaxis} taxis</span>
           </div>
           {admin.rivalEnabled && (
             <div className="tt-stat" style={{ color: "#ff6b7a" }} title="Courses volées par Rival Cabs">
