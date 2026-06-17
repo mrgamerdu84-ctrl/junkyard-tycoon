@@ -44,11 +44,13 @@ export const TAXI_COLORS = [
 ];
 
 type TaxiMode = "idle" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling" | "depositing";
+type LanePosition = { x: number; y: number; angle: number };
 type Taxi = {
   id: number;
   pathIdx: number;    // path actuel emprunté (0..ROADS.length-1)
   pos: number;        // longueur le long du path actuel
   target: number;
+  lane?: LanePosition;
   mode: TaxiMode;
   speed: number;
   colorId: string;
@@ -409,7 +411,7 @@ export default function TaxiTycoon() {
   const jobIdRef = useRef(1);
 
   // === Concurrent IA ===
-  type RivalTaxi = { id: number; pathIdx: number; pos: number; target: number; mode: TaxiMode; jobId: number | null };
+  type RivalTaxi = { id: number; pathIdx: number; pos: number; target: number; lane?: LanePosition; mode: TaxiMode; jobId: number | null };
   const rivalTaxisRef = useRef<RivalTaxi[]>([]);
   const rivalJobsRef = useRef<Job[]>([]); // courses prises en charge par l'IA
   const [rivalStolen, setRivalStolen] = useState(0);
@@ -420,6 +422,7 @@ export default function TaxiTycoon() {
     pathIdx: number;
     pos: number;
     target: number;
+    lane?: LanePosition;
     mode: "patrol" | "chase" | "stakeout_drive" | "stakeout_wait";
     chaseRivalId: number | null;
     chasePlayerTaxiId: number | null;
@@ -619,7 +622,7 @@ export default function TaxiTycoon() {
       // taxi neuf : path 0, posé près du QG
       const pIdx = 0;
       const pos = closestOnPath(pIdx, admin.hqX, admin.hqY);
-      taxisRef.current.push({
+      const spawnedTaxi: Taxi = {
         id: nextIdRef.current++,
         pathIdx: pIdx,
         pos,
@@ -630,7 +633,9 @@ export default function TaxiTycoon() {
         jobId: null,
         fuel: 100,
         ridesSinceDeposit: 0,
-      });
+      };
+      syncVehicleLane(spawnedTaxi);
+      taxisRef.current.push(spawnedTaxi);
     }
     taxisRef.current.forEach((t, i) => {
       t.speed = newSpeed;
@@ -639,6 +644,7 @@ export default function TaxiTycoon() {
         const pos = closestOnPath(t.pathIdx, admin.hqX, admin.hqY);
         t.pos = pos; t.target = pos;
       }
+      syncVehicleLane(t);
     });
     forceRender((n) => n + 1);
   }, [pathsReady, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, admin.hqX, admin.hqY]);
@@ -649,10 +655,12 @@ export default function TaxiTycoon() {
     const target = admin.rivalEnabled ? Math.max(0, Math.min(6, admin.rivalTaxiCount)) : 0;
     while (rivalTaxisRef.current.length < target) {
       const pos = closestOnPath(0, admin.rivalHQX, admin.rivalHQY);
-      rivalTaxisRef.current.push({
+      const spawnedRival: RivalTaxi = {
         id: 10000 + rivalTaxisRef.current.length,
         pathIdx: 0, pos, target: pos, mode: "idle", jobId: null,
-      });
+      };
+      syncVehicleLane(spawnedRival);
+      rivalTaxisRef.current.push(spawnedRival);
     }
     while (rivalTaxisRef.current.length > target) rivalTaxisRef.current.pop();
     forceRender((n) => n + 1);
@@ -670,7 +678,7 @@ export default function TaxiTycoon() {
     while (policeCarsRef.current.length < target) {
       const pIdx = allowed[policeCarsRef.current.length % allowed.length];
       const plen = pathLensRef.current[pIdx] ?? 0;
-      policeCarsRef.current.push({
+      const spawnedPolice: PoliceCar = {
         id: 30000 + policeCarsRef.current.length,
         pathIdx: pIdx,
         pos: (policeCarsRef.current.length / target) * plen,
@@ -678,7 +686,9 @@ export default function TaxiTycoon() {
         mode: "patrol",
         chaseRivalId: null,
         chasePlayerTaxiId: null,
-      });
+      };
+      syncVehicleLane(spawnedPolice);
+      policeCarsRef.current.push(spawnedPolice);
     }
     while (policeCarsRef.current.length > target) policeCarsRef.current.pop();
     forceRender((n) => n + 1);
@@ -1152,7 +1162,9 @@ export default function TaxiTycoon() {
         }
       }
 
-
+      taxisRef.current.forEach(syncVehicleLane);
+      rivalTaxisRef.current.forEach(syncVehicleLane);
+      policeCarsRef.current.forEach(syncVehicleLane);
 
       // ====== Circuit taxis : avance le long de la boucle ======
       const cInfo = circuitInfoRef.current;
@@ -1174,14 +1186,31 @@ export default function TaxiTycoon() {
 
   // === Helpers de rendu position ===
   const LANE_OFFSET = 12; // px à droite de l'axe de la route, dans le sens de marche
+  const clampRoadLen = (pathIdx: number, len: number): number => {
+    const plen = pathLensRef.current[pathIdx] ?? 0;
+    if (plen <= 0 || !Number.isFinite(len)) return 0;
+    return Math.max(0, Math.min(plen - 0.1, len));
+  };
+
+  const getRoadTangent = (pathIdx: number, len: number) => {
+    const p = pathRefs.current[pathIdx];
+    const plen = pathLensRef.current[pathIdx] ?? 0;
+    if (!p || plen === 0) return { dx: 1, dy: 0 };
+    const aLen = Math.max(0, len - 2);
+    const bLen = Math.min(plen - 0.1, len + 2);
+    const a = p.getPointAtLength(aLen);
+    const b = p.getPointAtLength(bLen);
+    return { dx: b.x - a.x, dy: b.y - a.y };
+  };
+
   const getXYOn = (pathIdx: number, len: number): { x: number; y: number; angle: number } => {
     const p = pathRefs.current[pathIdx];
     const plen = pathLensRef.current[pathIdx] ?? 0;
     if (!p || plen === 0) return { x: 0, y: 0, angle: 0 };
-    const safe = ((len % plen) + plen) % plen;
+    const safe = clampRoadLen(pathIdx, len);
     const pt = p.getPointAtLength(safe);
-    const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
-    const angle = (Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180) / Math.PI;
+    const { dx, dy } = getRoadTangent(pathIdx, safe);
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
     return { x: pt.x, y: pt.y, angle };
   };
   // Position décalée d'une voie sur la droite (en sens de marche).
@@ -1190,10 +1219,9 @@ export default function TaxiTycoon() {
     const p = pathRefs.current[pathIdx];
     const plen = pathLensRef.current[pathIdx] ?? 0;
     if (!p || plen === 0) return { x: 0, y: 0, angle: 0 };
-    const safe = ((len % plen) + plen) % plen;
+    const safe = clampRoadLen(pathIdx, len);
     const pt = p.getPointAtLength(safe);
-    const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
-    let dx = pt2.x - pt.x, dy = pt2.y - pt.y;
+    let { dx, dy } = getRoadTangent(pathIdx, safe);
     if (!forward) { dx = -dx; dy = -dy; }
     const L = Math.hypot(dx, dy) || 1;
     // perpendiculaire « à droite » du sens de marche (repère y vers le bas)
@@ -1205,15 +1233,20 @@ export default function TaxiTycoon() {
     };
   };
 
+  function syncVehicleLane(vehicle: { pathIdx: number; pos: number; target: number; lane?: LanePosition }) {
+    vehicle.pos = clampRoadLen(vehicle.pathIdx, vehicle.pos);
+    vehicle.target = clampRoadLen(vehicle.pathIdx, vehicle.target);
+    vehicle.lane = getLaneXY(vehicle.pathIdx, vehicle.pos, vehicle.target >= vehicle.pos);
+  }
+
   // Position décalée sur le trottoir (perpendiculaire à la route)
   const getSidewalk = (pathIdx: number, len: number, side: 1 | -1) => {
     const p = pathRefs.current[pathIdx];
     const plen = pathLensRef.current[pathIdx] ?? 0;
     if (!p || plen === 0) return { x: 0, y: 0, angle: 0 };
-    const safe = ((len % plen) + plen) % plen;
+    const safe = clampRoadLen(pathIdx, len);
     const pt = p.getPointAtLength(safe);
-    const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
-    const dx = pt2.x - pt.x, dy = pt2.y - pt.y;
+    const { dx, dy } = getRoadTangent(pathIdx, safe);
     const L = Math.hypot(dx, dy) || 1;
     const nx = -dy / L, ny = dx / L; // normale unitaire
     return {
@@ -1357,6 +1390,7 @@ export default function TaxiTycoon() {
     free.pos = closestOnPath(job.pickupPath, here.x, here.y);
     free.target = job.pickup;
     free.mode = "to_pickup";
+    syncVehicleLane(free);
     setJobs((js) => js.map((j) => j.id === id ? { ...j, status: "accepted", acceptedAt: Date.now() } : j));
   };
 
@@ -1557,7 +1591,7 @@ export default function TaxiTycoon() {
         {/* Taxis rivaux (couleur sombre + bandeau rouge) */}
         {admin.rivalEnabled && rivalTaxisRef.current.map((r) => {
           const movingForward = r.target >= r.pos;
-          const p = getLaneXY(r.pathIdx, r.pos, movingForward);
+          const p = r.lane ?? getLaneXY(r.pathIdx, r.pos, movingForward);
           const angle = p.angle;
           return (
             <g key={r.id}>
@@ -1627,7 +1661,7 @@ export default function TaxiTycoon() {
           const hidden = pc.mode === "stakeout_wait" && pc.hideoutXY;
           const p = hidden
             ? { x: pc.hideoutXY!.x, y: pc.hideoutXY!.y, angle: 0 }
-            : getLaneXY(pc.pathIdx, pc.pos, movingForward);
+            : (pc.lane ?? getLaneXY(pc.pathIdx, pc.pos, movingForward));
           const chasing = pc.mode === "chase";
           const t = Math.floor(performance.now() / 200) % 2;
           const ledA = chasing ? (t === 0 ? "#3b82f6" : "#ef4444") : "#1f2937";
@@ -1657,7 +1691,7 @@ export default function TaxiTycoon() {
 
         {taxisRef.current.map((taxi) => {
           const movingForward = taxi.target >= taxi.pos;
-          const p = getLaneXY(taxi.pathIdx, taxi.pos, movingForward);
+          const p = taxi.lane ?? getLaneXY(taxi.pathIdx, taxi.pos, movingForward);
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const _ = taxi.colorId;
           const angle = p.angle;
