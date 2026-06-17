@@ -44,11 +44,13 @@ export const TAXI_COLORS = [
 ];
 
 type TaxiMode = "idle" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling" | "depositing";
+type LanePosition = { x: number; y: number; angle: number };
 type Taxi = {
   id: number;
   pathIdx: number;    // path actuel emprunté (0..ROADS.length-1)
   pos: number;        // longueur le long du path actuel
   target: number;
+  lane?: LanePosition;
   mode: TaxiMode;
   speed: number;
   colorId: string;
@@ -409,7 +411,7 @@ export default function TaxiTycoon() {
   const jobIdRef = useRef(1);
 
   // === Concurrent IA ===
-  type RivalTaxi = { id: number; pathIdx: number; pos: number; target: number; mode: TaxiMode; jobId: number | null };
+  type RivalTaxi = { id: number; pathIdx: number; pos: number; target: number; lane?: LanePosition; mode: TaxiMode; jobId: number | null };
   const rivalTaxisRef = useRef<RivalTaxi[]>([]);
   const rivalJobsRef = useRef<Job[]>([]); // courses prises en charge par l'IA
   const [rivalStolen, setRivalStolen] = useState(0);
@@ -420,6 +422,7 @@ export default function TaxiTycoon() {
     pathIdx: number;
     pos: number;
     target: number;
+    lane?: LanePosition;
     mode: "patrol" | "chase" | "stakeout_drive" | "stakeout_wait";
     chaseRivalId: number | null;
     chasePlayerTaxiId: number | null;
