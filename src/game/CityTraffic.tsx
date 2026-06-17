@@ -377,6 +377,11 @@ export default function CityTraffic() {
     const lens = pathRefs.current.map((p: SVGPathElement | null) => (p ? p.getTotalLength() : 1));
     if (lens.some((l: number) => l <= 1)) return;
 
+    // Initialise les feux rouges (singleton partagé avec TaxiTycoon).
+    initTrafficLights(pathRefs.current, lens);
+    setLights(getTrafficLights());
+
+
     const states: CarState[] = activeCars.map((spec, i) => {
       const pathLen = lens[spec.pathIdx];
       const baseSpeed = pathLen / spec.duration; // px/s
