@@ -813,15 +813,30 @@ export default function TaxiTycoon() {
               setJobs((js) => js.filter((x) => x.id !== j.id));
             }
             taxi.jobId = null;
+            taxi.ridesSinceDeposit = (taxi.ridesSinceDeposit ?? 0) + 1;
             const pIdx = pickPath(taxi.pathIdx);
             const here = taxiXY(taxi);
             taxi.pathIdx = pIdx;
             taxi.pos = closestOnPath(pIdx, here.x, here.y);
             taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
             taxi.mode = "returning";
+            // tous les N courses, doit déposer au QG
+            if (taxi.ridesSinceDeposit >= DEPOSIT_EVERY_RIDES) {
+              taxi.mustDeposit = true;
+            }
           } else if (taxi.mode === "returning") {
-            taxi.mode = "idle";
+            if (taxi.mustDeposit) {
+              // arrivé au garage : dépose et attend 5s
+              taxi.mode = "depositing";
+              taxi.depositUntil = Date.now() + DEPOSIT_MS;
+              popFloat("💰 Dépôt", adm.hqX, adm.hqY - 24);
+            } else {
+              taxi.mode = "idle";
+            }
             taxi.jobId = null;
+          } else if (taxi.mode === "depositing") {
+            // ne devrait pas arriver ici (pas de mouvement) — sécurité
+            taxi.mode = "idle";
           } else if (taxi.mode === "to_gas") {
             taxi.mode = "refueling";
             taxi.refuelUntil = Date.now() + FUEL_REFILL_MS;
