@@ -629,6 +629,7 @@ export default function TaxiTycoon() {
         colorId: save.taxis[idx].colorId,
         jobId: null,
         fuel: 100,
+        ridesSinceDeposit: 0,
       });
     }
     taxisRef.current.forEach((t, i) => {
