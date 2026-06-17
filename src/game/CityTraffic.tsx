@@ -616,7 +616,7 @@ export default function CityTraffic() {
         const dx = (phase - 0.5) * 30;
         return (
           <g key={`pedx-${l.id}`} transform={`translate(${l.x + dx},${l.y + 28})`} pointerEvents="none">
-            <PedestrianSVG shirt="#22e36a" pants="#0f172a" skin="#e8b48a" side={0 as unknown as 1} scale={0.7} />
+            <PedestrianSVG shirt="#22e36a" pants="#0f172a" skin="#e8b48a" side={0} scale={0.7} />
           </g>
         );
       })}
