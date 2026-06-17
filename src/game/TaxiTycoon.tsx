@@ -735,7 +735,10 @@ export default function TaxiTycoon() {
               r.mode = "idle";
             }
           } else {
-            r.pos += Math.sign(diff) * step;
+            const forward = diff > 0;
+            if (!shouldStopAhead(r.pathIdx, r.pos, forward, nowSeconds())) {
+              r.pos += Math.sign(diff) * step;
+            }
           }
         }
       }
