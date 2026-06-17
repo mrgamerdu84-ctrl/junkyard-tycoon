@@ -350,8 +350,10 @@ export default function TaxiTycoon() {
     pathIdx: number;
     pos: number;
     target: number;
-    mode: "patrol" | "chase";
+    mode: "patrol" | "chase" | "stakeout_drive" | "stakeout_wait";
     chaseRivalId: number | null;
+    chasePlayerTaxiId: number | null;
+    hideoutXY?: { x: number; y: number };
   };
   const policeCarsRef = useRef<PoliceCar[]>([]);
   const wantedRivalIdRef = useRef<number | null>(null);
