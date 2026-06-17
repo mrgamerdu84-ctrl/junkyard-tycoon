@@ -344,6 +344,24 @@ export default function TaxiTycoon() {
   const rivalJobsRef = useRef<Job[]>([]); // courses prises en charge par l'IA
   const [rivalStolen, setRivalStolen] = useState(0);
 
+  // === Police ===
+  type PoliceCar = {
+    id: number;
+    pathIdx: number;
+    pos: number;
+    target: number;
+    mode: "patrol" | "chase";
+    chaseRivalId: number | null;
+  };
+  const policeCarsRef = useRef<PoliceCar[]>([]);
+  const wantedRivalIdRef = useRef<number | null>(null);
+  const wantedUntilRef = useRef<number>(0);
+  const lastViolationRef = useRef<number>(performance.now());
+  const POLICE_SPEED = 92;     // px/s patrol
+  const POLICE_CHASE_SPEED = 140;
+  const POLICE_FINE = 200;
+  const POLICE_CATCH_DIST = 48; // px
+
   // === Circuit personnalisé (dessiné par le joueur) ===
   // Pré-calcule la longueur totale + offsets cumulés.
   const circuitInfo = useMemo(() => {
@@ -532,6 +550,34 @@ export default function TaxiTycoon() {
     while (rivalTaxisRef.current.length > target) rivalTaxisRef.current.pop();
     forceRender((n) => n + 1);
   }, [pathsReady, admin.rivalEnabled, admin.rivalTaxiCount, admin.rivalHQX, admin.rivalHQY]);
+
+  // Sync police fleet (2 voitures qui patrouillent en permanence)
+  useEffect(() => {
+    if (!pathsReady) return;
+    const N = pathLensRef.current.length;
+    if (N === 0) return;
+    const allowed: number[] = [];
+    for (let i = 0; i < N; i++) if (!VILLAGE_PATHS.has(i)) allowed.push(i);
+    if (allowed.length === 0) return;
+    const target = 2;
+    while (policeCarsRef.current.length < target) {
+      const pIdx = allowed[policeCarsRef.current.length % allowed.length];
+      const plen = pathLensRef.current[pIdx] ?? 0;
+      policeCarsRef.current.push({
+        id: 30000 + policeCarsRef.current.length,
+        pathIdx: pIdx,
+        pos: (policeCarsRef.current.length / target) * plen,
+        target: plen - 1,
+        mode: "patrol",
+        chaseRivalId: null,
+      });
+    }
+    while (policeCarsRef.current.length > target) policeCarsRef.current.pop();
+    forceRender((n) => n + 1);
+  }, [pathsReady]);
+
+
+
 
 
 
@@ -743,6 +789,102 @@ export default function TaxiTycoon() {
         }
       }
 
+      // ====== Police : patrouille + course-poursuite des rivaux contrevenants ======
+      if (policeCarsRef.current.length > 0) {
+        const nowMs = performance.now();
+
+        // 1) Trigger aléatoire d'une infraction par un rival mobile (toutes les ~25-40 s)
+        if (
+          wantedRivalIdRef.current === null &&
+          nowMs - lastViolationRef.current > 25000 + Math.random() * 15000 &&
+          rivalTaxisRef.current.length > 0
+        ) {
+          const movingRivals = rivalTaxisRef.current.filter(r => r.mode !== "idle");
+          if (movingRivals.length > 0) {
+            const victim = movingRivals[Math.floor(Math.random() * movingRivals.length)];
+            wantedRivalIdRef.current = victim.id;
+            wantedUntilRef.current = nowMs + 20000;
+            lastViolationRef.current = nowMs;
+            showToast("🚨 Rival Cabs grille un feu — la police arrive !");
+          } else {
+            lastViolationRef.current = nowMs; // reschedule
+          }
+        }
+
+        // Expire si trop long sans capture
+        if (wantedRivalIdRef.current !== null && nowMs > wantedUntilRef.current) {
+          wantedRivalIdRef.current = null;
+        }
+
+        const wanted = wantedRivalIdRef.current !== null
+          ? rivalTaxisRef.current.find(r => r.id === wantedRivalIdRef.current) ?? null
+          : null;
+
+        // 2) MAJ chaque police car
+        for (const pc of policeCarsRef.current) {
+          // Assigner / lever la chasse
+          if (wanted && pc.mode !== "chase") {
+            pc.mode = "chase";
+            pc.chaseRivalId = wanted.id;
+            // saute sur le path du rival pour une vraie poursuite
+            const here = pathRefs.current[pc.pathIdx]?.getPointAtLength(pc.pos);
+            pc.pathIdx = wanted.pathIdx;
+            pc.pos = here ? closestOnPath(wanted.pathIdx, here.x, here.y) : 0;
+          } else if (!wanted && pc.mode === "chase") {
+            pc.mode = "patrol";
+            pc.chaseRivalId = null;
+            const plen = pathLensRef.current[pc.pathIdx] ?? 0;
+            pc.target = pc.target > pc.pos ? plen - 1 : 1;
+          }
+
+          if (pc.mode === "chase" && wanted) {
+            // Synchroniser le path + viser la position du rival
+            if (pc.pathIdx !== wanted.pathIdx) {
+              const here = pathRefs.current[pc.pathIdx]?.getPointAtLength(pc.pos);
+              pc.pathIdx = wanted.pathIdx;
+              pc.pos = here ? closestOnPath(wanted.pathIdx, here.x, here.y) : pc.pos;
+            }
+            pc.target = wanted.pos;
+            const diff = pc.target - pc.pos;
+            const step = POLICE_CHASE_SPEED * dt;
+            if (Math.abs(diff) > 0.5) pc.pos += Math.sign(diff) * Math.min(step, Math.abs(diff));
+
+            // Capture si proche en distance XY
+            const pcPt = pathRefs.current[pc.pathIdx]?.getPointAtLength(pc.pos);
+            const rPt = pathRefs.current[wanted.pathIdx]?.getPointAtLength(wanted.pos);
+            if (pcPt && rPt) {
+              const d = Math.hypot(pcPt.x - rPt.x, pcPt.y - rPt.y);
+              if (d < POLICE_CATCH_DIST) {
+                // Arrestation : amende reversée au joueur
+                setSave(s => ({ ...s, money: s.money + POLICE_FINE }));
+                popFloat(`+${POLICE_FINE}$ amende`, rPt.x, rPt.y - 8);
+                showToast("🚓 Rival arrêté ! Amende reversée.");
+                wantedRivalIdRef.current = null;
+                pc.mode = "patrol";
+                pc.chaseRivalId = null;
+                const plen = pathLensRef.current[pc.pathIdx] ?? 0;
+                pc.target = plen - 1;
+              }
+            }
+          } else {
+            // Patrouille : aller-retour sur le path en respectant les feux
+            const diff = pc.target - pc.pos;
+            const step = POLICE_SPEED * dt;
+            const plen = pathLensRef.current[pc.pathIdx] ?? 0;
+            if (Math.abs(diff) <= step) {
+              pc.target = pc.target > 1 ? 1 : Math.max(1, plen - 1);
+            } else {
+              const forward = diff > 0;
+              if (!shouldStopAhead(pc.pathIdx, pc.pos, forward, nowSeconds())) {
+                pc.pos += Math.sign(diff) * step;
+              }
+            }
+          }
+        }
+      }
+
+
+
       // ====== Circuit taxis : avance le long de la boucle ======
       const cInfo = circuitInfoRef.current;
       if (circuitTaxisRef.current.length > 0 && cInfo.total > 0) {
@@ -762,6 +904,7 @@ export default function TaxiTycoon() {
   }, [pathsReady]);
 
   // === Helpers de rendu position ===
+  const LANE_OFFSET = 12; // px à droite de l'axe de la route, dans le sens de marche
   const getXYOn = (pathIdx: number, len: number): { x: number; y: number; angle: number } => {
     const p = pathRefs.current[pathIdx];
     const plen = pathLensRef.current[pathIdx] ?? 0;
@@ -771,6 +914,26 @@ export default function TaxiTycoon() {
     const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
     const angle = (Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180) / Math.PI;
     return { x: pt.x, y: pt.y, angle };
+  };
+  // Position décalée d'une voie sur la droite (en sens de marche).
+  // forward = true si le véhicule progresse dans le sens du path.
+  const getLaneXY = (pathIdx: number, len: number, forward: boolean) => {
+    const p = pathRefs.current[pathIdx];
+    const plen = pathLensRef.current[pathIdx] ?? 0;
+    if (!p || plen === 0) return { x: 0, y: 0, angle: 0 };
+    const safe = ((len % plen) + plen) % plen;
+    const pt = p.getPointAtLength(safe);
+    const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
+    let dx = pt2.x - pt.x, dy = pt2.y - pt.y;
+    if (!forward) { dx = -dx; dy = -dy; }
+    const L = Math.hypot(dx, dy) || 1;
+    // perpendiculaire « à droite » du sens de marche (repère y vers le bas)
+    const rx = dy / L, ry = -dx / L;
+    return {
+      x: pt.x + rx * LANE_OFFSET,
+      y: pt.y + ry * LANE_OFFSET,
+      angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+    };
   };
 
   // Position décalée sur le trottoir (perpendiculaire à la route)
@@ -1110,9 +1273,9 @@ export default function TaxiTycoon() {
 
         {/* Taxis rivaux (couleur sombre + bandeau rouge) */}
         {admin.rivalEnabled && rivalTaxisRef.current.map((r) => {
-          const p = getXYOn(r.pathIdx, r.pos);
           const movingForward = r.target >= r.pos;
-          const angle = movingForward ? p.angle : p.angle + 180;
+          const p = getLaneXY(r.pathIdx, r.pos, movingForward);
+          const angle = p.angle;
           return (
             <g key={r.id}>
               <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
@@ -1123,13 +1286,46 @@ export default function TaxiTycoon() {
           );
         })}
 
-        {/* Taxis */}
+        {/* Voitures de police — patrouillent et chassent les contrevenants */}
+        {policeCarsRef.current.map((pc) => {
+          const movingForward = pc.target >= pc.pos;
+          const p = getLaneXY(pc.pathIdx, pc.pos, movingForward);
+          const chasing = pc.mode === "chase";
+          // gyrophare : alternance rouge/bleu via t
+          const t = Math.floor(performance.now() / 200) % 2;
+          const ledA = chasing ? (t === 0 ? "#3b82f6" : "#ef4444") : "#1f2937";
+          const ledB = chasing ? (t === 0 ? "#ef4444" : "#3b82f6") : "#1f2937";
+          return (
+            <g key={pc.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
+              {/* halo lumineux pendant la chasse */}
+              {chasing && (
+                <circle r="22" fill={t === 0 ? "#3b82f6" : "#ef4444"} opacity="0.28">
+                  <animate attributeName="r" values="18;26;18" dur="0.6s" repeatCount="indefinite" />
+                </circle>
+              )}
+              {/* corps voiture vue du ciel */}
+              <rect x="-14" y="-7" width="28" height="14" rx="3" fill="#f8fafc" stroke="#0b0d10" strokeWidth="1" />
+              {/* bande latérale noire (POLICE) */}
+              <rect x="-14" y="-1.4" width="28" height="2.8" fill="#0b0d10" />
+              {/* capot / coffre */}
+              <rect x="-12" y="-5.5" width="6" height="11" rx="1.2" fill="#dbe2ea" opacity="0.9" />
+              <rect x="6" y="-5.5" width="6" height="11" rx="1.2" fill="#dbe2ea" opacity="0.9" />
+              {/* gyrophare sur toit */}
+              <rect x="-4" y="-3" width="8" height="6" rx="1.2" fill="#0b0d10" />
+              <circle cx="-2" cy="0" r="1.6" fill={ledA} />
+              <circle cx="2" cy="0" r="1.6" fill={ledB} />
+              <text x="0" y="1.6" textAnchor="middle" fontSize="3" fontWeight="900" fill="#0b0d10" pointerEvents="none">POLICE</text>
+            </g>
+          );
+        })}
+
+
         {taxisRef.current.map((taxi) => {
-          const p = getXYOn(taxi.pathIdx, taxi.pos);
+          const movingForward = taxi.target >= taxi.pos;
+          const p = getLaneXY(taxi.pathIdx, taxi.pos, movingForward);
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const _ = taxi.colorId;
-          const movingForward = taxi.target >= taxi.pos;
-          const angle = movingForward ? p.angle : p.angle + 180;
+          const angle = p.angle;
           const fuelPct = Math.max(0, Math.min(1, taxi.fuel / 100));
           const fuelLow = taxi.fuel < FUEL_LOW_THRESHOLD;
           return (
