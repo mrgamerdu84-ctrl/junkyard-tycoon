@@ -318,13 +318,15 @@ function Lamp({ x, y, night }: { x: number; y: number; night: number }) {
   return (
     <g transform={`translate(${x},${y})`}>
       {lit && (
-        <circle r="46" fill="#ffd66a" opacity={night * 0.28}>
-          <animate attributeName="opacity" values={`${night * 0.2};${night * 0.36};${night * 0.2}`} dur="3s" repeatCount="indefinite" />
+        <circle r="62" fill="#ffd66a" opacity={night * 0.32}>
+          <animate attributeName="opacity" values={`${night * 0.22};${night * 0.42};${night * 0.22}`} dur="3s" repeatCount="indefinite" />
         </circle>
       )}
-      <path d="M 0 30 L 0 0 L -18 -7" stroke="#191b1f" strokeWidth="5" strokeLinecap="round" fill="none" />
-      <circle cx="-20" cy="-7" r="6" fill={lit ? "#fff5b0" : "#4f5148"} />
-      {lit && <circle cx="-20" cy="-7" r="12" fill="#ffd66a" opacity="0.35" />}
+      {/* base / poteau plus visible */}
+      <ellipse cx="0" cy="4" rx="5" ry="2" fill="rgba(0,0,0,0.55)" />
+      <path d="M 0 30 L 0 -2 L -26 -10" stroke="#0e1115" strokeWidth="6" strokeLinecap="round" fill="none" />
+      <circle cx="-28" cy="-10" r="8" fill={lit ? "#fff5b0" : "#5a5d54"} stroke="#1a1d22" strokeWidth="1.2" />
+      {lit && <circle cx="-28" cy="-10" r="16" fill="#ffd66a" opacity="0.45" />}
     </g>
   );
 }
@@ -478,7 +480,7 @@ export default function CityTraffic() {
     <svg
       viewBox="0 0 1920 1080"
       preserveAspectRatio="xMidYMid slice"
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 3 }}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 5 }}
     >
       <defs>
         {ROADS.map((d, i) => (
@@ -552,7 +554,7 @@ export default function CityTraffic() {
         const pedGreen = red;
         const pedColor = pedGreen ? "#22e36a" : "#ff2a2a";
         return (
-          <g key={`tl-${l.id}`} transform={`translate(${l.x},${l.y})`} pointerEvents="none">
+          <g key={`tl-${l.id}`} transform={`translate(${l.x},${l.y}) scale(1.6)`} pointerEvents="none">
             <ellipse cx="0" cy="14" rx="14" ry="4" fill="rgba(0,0,0,0.45)" />
             <rect x="-7" y="-22" width="14" height="36" rx="3" fill="#0e1217" stroke="#000" strokeWidth="1" />
             <circle cx="0" cy="-14" r="3.4" fill={red ? "#ff2a2a" : "#2a0808"} opacity={red ? 1 : 0.4}>
