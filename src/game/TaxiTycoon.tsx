@@ -845,9 +845,11 @@ export default function TaxiTycoon() {
               taxi.mode = "idle";
             }
             taxi.jobId = null;
-          } else if (taxi.mode === "depositing") {
-            // ne devrait pas arriver ici (pas de mouvement) — sécurité
-            taxi.mode = "idle";
+          } else if (taxi.mode === "to_gas") {
+            taxi.mode = "refueling";
+            taxi.refuelUntil = Date.now() + FUEL_REFILL_MS;
+          } else if (false) {
+            // placeholder pour conserver la chaîne if/else
           } else if (taxi.mode === "to_gas") {
             taxi.mode = "refueling";
             taxi.refuelUntil = Date.now() + FUEL_REFILL_MS;
