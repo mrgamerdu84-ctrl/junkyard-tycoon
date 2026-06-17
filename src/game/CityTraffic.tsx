@@ -248,6 +248,83 @@ function Vehicle({
 // Composants SVG conservés pour référence/legacy (non utilisés depuis l'image PNG).
 void CarSVG; void VanSVG; void TruckSVG; void HatchSVG;
 
+// === Piétons photos qui marchent sur les trottoirs ===
+type PhotoPedSpec = {
+  pathIdx: number;
+  side: 1 | -1;
+  speed: number;     // px/s
+  startFrac: number; // 0..1
+  imageIdx: number;
+  scale: number;
+};
+const PHOTO_PEDS: PhotoPedSpec[] = [
+  { pathIdx: 0, side: 1,  speed: 22, startFrac: 0.08, imageIdx: 0, scale: 0.55 },
+  { pathIdx: 0, side: -1, speed: 18, startFrac: 0.22, imageIdx: 1, scale: 0.55 },
+  { pathIdx: 0, side: 1,  speed: 20, startFrac: 0.42, imageIdx: 1, scale: 0.5 },
+  { pathIdx: 0, side: -1, speed: 24, startFrac: 0.62, imageIdx: 0, scale: 0.55 },
+  { pathIdx: 0, side: 1,  speed: 19, startFrac: 0.82, imageIdx: 0, scale: 0.5 },
+  { pathIdx: 2, side: 1,  speed: 21, startFrac: 0.12, imageIdx: 1, scale: 0.55 },
+  { pathIdx: 2, side: -1, speed: 23, startFrac: 0.34, imageIdx: 0, scale: 0.55 },
+  { pathIdx: 2, side: 1,  speed: 18, startFrac: 0.56, imageIdx: 1, scale: 0.5 },
+  { pathIdx: 2, side: -1, speed: 25, startFrac: 0.78, imageIdx: 1, scale: 0.55 },
+];
+const PHOTO_PED_OFFSET = 38;
+
+function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGPathElement | null)[]> }) {
+  const nodes = useRef<(SVGGElement | null)[]>([]);
+  useEffect(() => {
+    const lens = pathRefs.current.map(p => p ? p.getTotalLength() : 0);
+    if (lens.some(l => l <= 1)) return;
+    const states = PHOTO_PEDS.map(spec => ({
+      spec,
+      pathLen: lens[spec.pathIdx],
+      s: spec.startFrac * lens[spec.pathIdx],
+    }));
+    let last = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      for (let i = 0; i < states.length; i++) {
+        const st = states[i];
+        const node = nodes.current[i];
+        const path = pathRefs.current[st.spec.pathIdx];
+        if (!path || !node) continue;
+        st.s = (st.s + st.spec.speed * dt) % st.pathLen;
+        const p = path.getPointAtLength(st.s);
+        const p2 = path.getPointAtLength(Math.min(st.pathLen, st.s + 1));
+        const dx = p2.x - p.x, dy = p2.y - p.y;
+        const L = Math.hypot(dx, dy) || 1;
+        // perpendiculaire = trottoir
+        const nx = -dy / L * PHOTO_PED_OFFSET * st.spec.side;
+        const ny =  dx / L * PHOTO_PED_OFFSET * st.spec.side;
+        node.setAttribute("transform", `translate(${(p.x + nx).toFixed(2)},${(p.y + ny).toFixed(2)})`);
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [pathRefs]);
+  return (
+    <g pointerEvents="none">
+      {PHOTO_PEDS.map((spec, i) => (
+        <g key={i} ref={el => { nodes.current[i] = el; }}>
+          <ellipse cx="0" cy={10 * spec.scale} rx={6 * spec.scale} ry={2 * spec.scale} fill="rgba(0,0,0,0.45)" />
+          <image
+            href={PED_PHOTO_IMAGES[spec.imageIdx]}
+            x={-14 * spec.scale}
+            y={-22 * spec.scale}
+            width={28 * spec.scale}
+            height={36 * spec.scale}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        </g>
+      ))}
+    </g>
+  );
+}
+
+
 type PedSpec = {
   pathIdx: number;
   duration: number;
