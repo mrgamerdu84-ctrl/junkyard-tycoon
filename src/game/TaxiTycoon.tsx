@@ -1590,7 +1590,7 @@ export default function TaxiTycoon() {
         {/* Taxis rivaux (couleur sombre + bandeau rouge) */}
         {admin.rivalEnabled && rivalTaxisRef.current.map((r) => {
           const movingForward = r.target >= r.pos;
-          const p = getLaneXY(r.pathIdx, r.pos, movingForward);
+          const p = r.lane ?? getLaneXY(r.pathIdx, r.pos, movingForward);
           const angle = p.angle;
           return (
             <g key={r.id}>
@@ -1660,7 +1660,7 @@ export default function TaxiTycoon() {
           const hidden = pc.mode === "stakeout_wait" && pc.hideoutXY;
           const p = hidden
             ? { x: pc.hideoutXY!.x, y: pc.hideoutXY!.y, angle: 0 }
-            : getLaneXY(pc.pathIdx, pc.pos, movingForward);
+            : (pc.lane ?? getLaneXY(pc.pathIdx, pc.pos, movingForward));
           const chasing = pc.mode === "chase";
           const t = Math.floor(performance.now() / 200) % 2;
           const ledA = chasing ? (t === 0 ? "#3b82f6" : "#ef4444") : "#1f2937";
@@ -1690,7 +1690,7 @@ export default function TaxiTycoon() {
 
         {taxisRef.current.map((taxi) => {
           const movingForward = taxi.target >= taxi.pos;
-          const p = getLaneXY(taxi.pathIdx, taxi.pos, movingForward);
+          const p = taxi.lane ?? getLaneXY(taxi.pathIdx, taxi.pos, movingForward);
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const _ = taxi.colorId;
           const angle = p.angle;
