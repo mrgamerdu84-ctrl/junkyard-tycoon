@@ -606,6 +606,7 @@ export default function TaxiTycoon() {
         target: plen - 1,
         mode: "patrol",
         chaseRivalId: null,
+        chasePlayerTaxiId: null,
       });
     }
     while (policeCarsRef.current.length > target) policeCarsRef.current.pop();
