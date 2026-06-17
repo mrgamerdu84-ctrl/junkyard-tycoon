@@ -229,7 +229,8 @@ function Vehicle({
   const H = W * 0.6;
   const href = CHARGER_IMAGES[photoIdx % CHARGER_IMAGES.length];
   return (
-    <g transform={`scale(${scale})`}>
+    <g>
+      {void scale}
       <ellipse cx="0" cy={H * 0.18} rx={W / 2 + 2} ry={H / 2 - 2} fill="rgba(0,0,0,0.4)" />
       <g transform="scale(-1,1)">
         <image
