@@ -521,8 +521,10 @@ export default function CityTraffic() {
         </g>
       ))}
 
-      {/* Piétons sur les trottoirs (offset perpendiculaire grâce à rotate="auto") */}
-      {PEDESTRIANS.map((ped, i) => (
+      {/* Piétons sur les trottoirs (densité moyenne : ~2x liste de base, sauf village) */}
+      {[...PEDESTRIANS, ...PEDESTRIANS.map(p => ({ ...p, delay: p.delay - 30, side: (p.side === 1 ? -1 : 1) as 1 | -1 }))]
+        .filter(p => !VILLAGE_PATHS.has(p.pathIdx))
+        .map((ped, i) => (
         <g key={`ped-${i}`}>
           <PedestrianSVG shirt={ped.shirt} pants={ped.pants} skin={ped.skin} side={ped.side} scale={ped.scale} />
           <animateMotion
@@ -538,7 +540,30 @@ export default function CityTraffic() {
         </g>
       ))}
 
-      <rect width="1920" height="1080" fill="#0a1530" opacity={night * 0.25} pointerEvents="none" />
+      {/* Feux rouges aux intersections */}
+      {(void lightsTick, lights).map((l) => {
+        const st = getLightState(l, nowSeconds());
+        const red = st === "red", orange = st === "orange", green = st === "green";
+        return (
+          <g key={`tl-${l.id}`} transform={`translate(${l.x},${l.y})`} pointerEvents="none">
+            <ellipse cx="0" cy="14" rx="14" ry="4" fill="rgba(0,0,0,0.45)" />
+            <rect x="-7" y="-22" width="14" height="36" rx="3" fill="#0e1217" stroke="#000" strokeWidth="1" />
+            <circle cx="0" cy="-14" r="3.4" fill={red ? "#ff2a2a" : "#2a0808"} opacity={red ? 1 : 0.4}>
+              {red && <animate attributeName="r" values="3.4;4.2;3.4" dur="1s" repeatCount="indefinite" />}
+            </circle>
+            <circle cx="0" cy="-4"  r="3.4" fill={orange ? "#ffb020" : "#2a1a00"} opacity={orange ? 1 : 0.4} />
+            <circle cx="0" cy="6"   r="3.4" fill={green ? "#22e36a" : "#0a2a14"} opacity={green ? 1 : 0.4} />
+            {/* halo lumineux la nuit */}
+            {night > 0.4 && (
+              <circle cx="0" cy={red ? -14 : orange ? -4 : 6} r="10"
+                fill={red ? "#ff2a2a" : orange ? "#ffb020" : "#22e36a"}
+                opacity={night * 0.35} />
+            )}
+          </g>
+        );
+      })}
+
+      <rect width="1920" height="1080" fill="#0a1530" opacity={night * 0.55} pointerEvents="none" />
     </svg>
   );
 }
