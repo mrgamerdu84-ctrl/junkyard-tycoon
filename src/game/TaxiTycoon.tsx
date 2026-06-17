@@ -740,7 +740,7 @@ export default function TaxiTycoon() {
       // === Mouvement des taxis ===
       for (const taxi of taxisRef.current) {
         // Consommation carburant si en mouvement
-        if (taxi.mode !== "idle" && taxi.mode !== "refueling") {
+        if (taxi.mode !== "idle" && taxi.mode !== "refueling" && taxi.mode !== "depositing") {
           taxi.fuel = Math.max(0, taxi.fuel - adm.fuelConsumption * dt);
         }
 
@@ -924,7 +924,7 @@ export default function TaxiTycoon() {
       {
         const nowMs = performance.now();
         for (const taxi of taxisRef.current) {
-          if (taxi.mode === "idle" || taxi.mode === "refueling") continue;
+          if (taxi.mode === "idle" || taxi.mode === "refueling" || taxi.mode === "depositing") continue;
           if (taxi.speed <= SPEED_LIMIT) continue;
           for (const rd of RADARS) {
             if (taxi.pathIdx !== rd.pathIdx) continue;
@@ -1108,7 +1108,7 @@ export default function TaxiTycoon() {
             const pcPt = pathRefs.current[pc.pathIdx]?.getPointAtLength(pc.pos);
             if (pcPt) {
               for (const taxi of taxisRef.current) {
-                if (taxi.mode === "idle" || taxi.mode === "refueling") continue;
+                if (taxi.mode === "idle" || taxi.mode === "refueling" || taxi.mode === "depositing") continue;
                 if (taxi.speed <= SPEED_LIMIT) continue;
                 const tPt = pathRefs.current[taxi.pathIdx]?.getPointAtLength(taxi.pos);
                 if (!tPt) continue;
@@ -1694,7 +1694,7 @@ export default function TaxiTycoon() {
           return (
             <g key={taxi.id}>
               <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
-                <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling"} />
+                <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling" && taxi.mode !== "depositing"} />
               </g>
               {/* Mini jauge essence sous le taxi */}
               <g transform={`translate(${p.x - 12},${p.y + 22})`}>
