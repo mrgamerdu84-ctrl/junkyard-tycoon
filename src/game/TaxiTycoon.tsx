@@ -1733,9 +1733,9 @@ export default function TaxiTycoon() {
         </div>
 
         <div className="tt-depot-card">
-          <div className="tt-depot-name">{tier.badge} {tier.name}</div>
+          <div className="tt-depot-name">{tier.name} (x{tier.fareMult.toFixed(1)})</div>
           <div className="tt-depot-stats">
-            Tarifs ×{tier.fareMult.toFixed(1)} • Capa {effectiveMaxTaxis} taxis
+            {taxiCount}/{effectiveMaxTaxis} taxis • Tarifs ×{tier.fareMult.toFixed(1)}
           </div>
         </div>
 
