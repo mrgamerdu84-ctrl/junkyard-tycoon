@@ -3,6 +3,7 @@ import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
 import taxiYellowAsset from "@/assets/taxi-yellow-top.png";
 import taxiBlackAsset from "@/assets/taxi-black-top.png";
 import taxiRedAsset from "@/assets/taxi-red-top.png";
+import policeCarAsset from "@/assets/police-car-top.png";
 import musicAsset from "@/assets/midnight-fare.mp3.asset.json";
 import { shouldStopAhead, nowSeconds } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
@@ -10,6 +11,7 @@ import { getAdmin, useAdminConfig } from "./adminConfig";
 const TAXI_YELLOW_URL = taxiYellowAsset;
 const TAXI_BLACK_URL = taxiBlackAsset;
 const TAXI_RED_URL = taxiRedAsset;
+const POLICE_CAR_URL = policeCarAsset;
 const MUSIC_URL = musicAsset.url;
 
 /* ============================================================
