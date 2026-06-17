@@ -789,6 +789,102 @@ export default function TaxiTycoon() {
         }
       }
 
+      // ====== Police : patrouille + course-poursuite des rivaux contrevenants ======
+      if (policeCarsRef.current.length > 0) {
+        const nowMs = performance.now();
+
+        // 1) Trigger aléatoire d'une infraction par un rival mobile (toutes les ~25-40 s)
+        if (
+          wantedRivalIdRef.current === null &&
+          nowMs - lastViolationRef.current > 25000 + Math.random() * 15000 &&
+          rivalTaxisRef.current.length > 0
+        ) {
+          const movingRivals = rivalTaxisRef.current.filter(r => r.mode !== "idle");
+          if (movingRivals.length > 0) {
+            const victim = movingRivals[Math.floor(Math.random() * movingRivals.length)];
+            wantedRivalIdRef.current = victim.id;
+            wantedUntilRef.current = nowMs + 20000;
+            lastViolationRef.current = nowMs;
+            showToast("🚨 Rival Cabs grille un feu — la police arrive !");
+          } else {
+            lastViolationRef.current = nowMs; // reschedule
+          }
+        }
+
+        // Expire si trop long sans capture
+        if (wantedRivalIdRef.current !== null && nowMs > wantedUntilRef.current) {
+          wantedRivalIdRef.current = null;
+        }
+
+        const wanted = wantedRivalIdRef.current !== null
+          ? rivalTaxisRef.current.find(r => r.id === wantedRivalIdRef.current) ?? null
+          : null;
+
+        // 2) MAJ chaque police car
+        for (const pc of policeCarsRef.current) {
+          // Assigner / lever la chasse
+          if (wanted && pc.mode !== "chase") {
+            pc.mode = "chase";
+            pc.chaseRivalId = wanted.id;
+            // saute sur le path du rival pour une vraie poursuite
+            const here = pathRefs.current[pc.pathIdx]?.getPointAtLength(pc.pos);
+            pc.pathIdx = wanted.pathIdx;
+            pc.pos = here ? closestOnPath(wanted.pathIdx, here.x, here.y) : 0;
+          } else if (!wanted && pc.mode === "chase") {
+            pc.mode = "patrol";
+            pc.chaseRivalId = null;
+            const plen = pathLensRef.current[pc.pathIdx] ?? 0;
+            pc.target = pc.target > pc.pos ? plen - 1 : 1;
+          }
+
+          if (pc.mode === "chase" && wanted) {
+            // Synchroniser le path + viser la position du rival
+            if (pc.pathIdx !== wanted.pathIdx) {
+              const here = pathRefs.current[pc.pathIdx]?.getPointAtLength(pc.pos);
+              pc.pathIdx = wanted.pathIdx;
+              pc.pos = here ? closestOnPath(wanted.pathIdx, here.x, here.y) : pc.pos;
+            }
+            pc.target = wanted.pos;
+            const diff = pc.target - pc.pos;
+            const step = POLICE_CHASE_SPEED * dt;
+            if (Math.abs(diff) > 0.5) pc.pos += Math.sign(diff) * Math.min(step, Math.abs(diff));
+
+            // Capture si proche en distance XY
+            const pcPt = pathRefs.current[pc.pathIdx]?.getPointAtLength(pc.pos);
+            const rPt = pathRefs.current[wanted.pathIdx]?.getPointAtLength(wanted.pos);
+            if (pcPt && rPt) {
+              const d = Math.hypot(pcPt.x - rPt.x, pcPt.y - rPt.y);
+              if (d < POLICE_CATCH_DIST) {
+                // Arrestation : amende reversée au joueur
+                setSave(s => ({ ...s, money: s.money + POLICE_FINE }));
+                popFloat(`+${POLICE_FINE}$ amende`, rPt.x, rPt.y - 8);
+                showToast("🚓 Rival arrêté ! Amende reversée.");
+                wantedRivalIdRef.current = null;
+                pc.mode = "patrol";
+                pc.chaseRivalId = null;
+                const plen = pathLensRef.current[pc.pathIdx] ?? 0;
+                pc.target = plen - 1;
+              }
+            }
+          } else {
+            // Patrouille : aller-retour sur le path en respectant les feux
+            const diff = pc.target - pc.pos;
+            const step = POLICE_SPEED * dt;
+            const plen = pathLensRef.current[pc.pathIdx] ?? 0;
+            if (Math.abs(diff) <= step) {
+              pc.target = pc.target > 1 ? 1 : Math.max(1, plen - 1);
+            } else {
+              const forward = diff > 0;
+              if (!shouldStopAhead(pc.pathIdx, pc.pos, forward, nowSeconds())) {
+                pc.pos += Math.sign(diff) * step;
+              }
+            }
+          }
+        }
+      }
+
+
+
       // ====== Circuit taxis : avance le long de la boucle ======
       const cInfo = circuitInfoRef.current;
       if (circuitTaxisRef.current.length > 0 && cInfo.total > 0) {
