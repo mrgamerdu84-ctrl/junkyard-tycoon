@@ -1177,14 +1177,31 @@ export default function TaxiTycoon() {
 
   // === Helpers de rendu position ===
   const LANE_OFFSET = 12; // px à droite de l'axe de la route, dans le sens de marche
+  const clampRoadLen = (pathIdx: number, len: number): number => {
+    const plen = pathLensRef.current[pathIdx] ?? 0;
+    if (plen <= 0 || !Number.isFinite(len)) return 0;
+    return Math.max(0, Math.min(plen - 0.1, len));
+  };
+
+  const getRoadTangent = (pathIdx: number, len: number) => {
+    const p = pathRefs.current[pathIdx];
+    const plen = pathLensRef.current[pathIdx] ?? 0;
+    if (!p || plen === 0) return { dx: 1, dy: 0 };
+    const aLen = Math.max(0, len - 2);
+    const bLen = Math.min(plen - 0.1, len + 2);
+    const a = p.getPointAtLength(aLen);
+    const b = p.getPointAtLength(bLen);
+    return { dx: b.x - a.x, dy: b.y - a.y };
+  };
+
   const getXYOn = (pathIdx: number, len: number): { x: number; y: number; angle: number } => {
     const p = pathRefs.current[pathIdx];
     const plen = pathLensRef.current[pathIdx] ?? 0;
     if (!p || plen === 0) return { x: 0, y: 0, angle: 0 };
-    const safe = ((len % plen) + plen) % plen;
+    const safe = clampRoadLen(pathIdx, len);
     const pt = p.getPointAtLength(safe);
-    const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
-    const angle = (Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180) / Math.PI;
+    const { dx, dy } = getRoadTangent(pathIdx, safe);
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
     return { x: pt.x, y: pt.y, angle };
   };
   // Position décalée d'une voie sur la droite (en sens de marche).
@@ -1193,10 +1210,9 @@ export default function TaxiTycoon() {
     const p = pathRefs.current[pathIdx];
     const plen = pathLensRef.current[pathIdx] ?? 0;
     if (!p || plen === 0) return { x: 0, y: 0, angle: 0 };
-    const safe = ((len % plen) + plen) % plen;
+    const safe = clampRoadLen(pathIdx, len);
     const pt = p.getPointAtLength(safe);
-    const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
-    let dx = pt2.x - pt.x, dy = pt2.y - pt.y;
+    let { dx, dy } = getRoadTangent(pathIdx, safe);
     if (!forward) { dx = -dx; dy = -dy; }
     const L = Math.hypot(dx, dy) || 1;
     // perpendiculaire « à droite » du sens de marche (repère y vers le bas)
@@ -1213,10 +1229,9 @@ export default function TaxiTycoon() {
     const p = pathRefs.current[pathIdx];
     const plen = pathLensRef.current[pathIdx] ?? 0;
     if (!p || plen === 0) return { x: 0, y: 0, angle: 0 };
-    const safe = ((len % plen) + plen) % plen;
+    const safe = clampRoadLen(pathIdx, len);
     const pt = p.getPointAtLength(safe);
-    const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
-    const dx = pt2.x - pt.x, dy = pt2.y - pt.y;
+    const { dx, dy } = getRoadTangent(pathIdx, safe);
     const L = Math.hypot(dx, dy) || 1;
     const nx = -dy / L, ny = dx / L; // normale unitaire
     return {
