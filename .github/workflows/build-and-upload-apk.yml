@@ -1,6 +1,5 @@
 name: Build & Upload APK
 
-
 on:
   push:
     branches: [main, master]
@@ -51,7 +50,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-home-cache-cleanup: true
+          cache-cleanup: true # Correction du warning ici
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
@@ -72,34 +71,9 @@ jobs:
           echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
           echo "name=JunkyCityEmpire-debug.apk" >> "$GITHUB_OUTPUT"
 
-      - name: Upload APK to Lovable
-        env:
-          UPLOAD_URL: ${{ secrets.UPLOAD_URL }}
-          UPLOAD_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
-          APK_PATH: ${{ steps.apk.outputs.path }}
-          APK_NAME: ${{ steps.apk.outputs.name }}
-        run: |
-          set -e
-          echo "Uploading $APK_PATH -> $UPLOAD_URL?name=$APK_NAME"
-          HTTP_CODE=$(curl -sS -o /tmp/up.json -w "%{http_code}" \
-            -X POST \
-            -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
-            -H "Content-Type: application/vnd.android.package-archive" \
-            --data-binary "@${APK_PATH}" \
-            "${UPLOAD_URL}?name=${APK_NAME}")
-          echo "HTTP $HTTP_CODE"
-          cat /tmp/up.json || true
-          echo
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Upload failed"
-            exit 1
-          fi
-          echo "✅ APK uploaded — la page /download le servira automatiquement."
-
       - name: Upload APK as workflow artifact (debug)
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
+          name: JunkyCityEmpire-debug
           path: ${{ steps.apk.outputs.path }}
           retention-days: 14
-
