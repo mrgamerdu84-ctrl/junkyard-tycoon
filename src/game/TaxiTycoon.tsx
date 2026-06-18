@@ -1717,18 +1717,19 @@ export default function TaxiTycoon() {
           };
           // Détermine quels taxis sont parqués
           const parked: { taxi: Taxi; slot: number }[] = [];
-          const parkedIds = new Set<string>();
+          const parkedIds = new Set<number>();
           taxisRef.current.forEach((t) => {
             if (t.mode === "depositing" || t.mode === "idle") {
               const here = taxiXY(t);
-              const dx = here.x - adm.hqX;
-              const dy = here.y - adm.hqY;
+              const dx = here.x - admin.hqX;
+              const dy = here.y - admin.hqY;
               if (dx * dx + dy * dy <= 70 * 70) {
                 parked.push({ taxi: t, slot: 0 });
                 parkedIds.add(t.id);
               }
             }
           });
+
           parked.forEach((p, i) => { p.slot = i % slotsCount; });
 
           return taxisRef.current.map((taxi) => {
