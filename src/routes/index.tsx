@@ -26,7 +26,12 @@ function TaxiTycoonPage() {
         * { box-sizing: border-box; }
         html, body, #root { margin: 0; padding: 0; background: #0c0d10; }
         .tt-root {
-          position: relative; width: 100%; height: 100vh; overflow: hidden;
+          position: relative;
+          width: 100vw;
+          /* dvh = dynamic viewport, suit la rotation iOS/Android sans rogner */
+          height: 100dvh;
+          min-height: 100vh;
+          overflow: hidden;
           background: #0c0d10;
         }
         .tt-map {
@@ -37,6 +42,11 @@ function TaxiTycoonPage() {
         .tt-vignette {
           position: absolute; inset: 0; z-index: 2; pointer-events: none;
           background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+        }
+        /* Paysage sur petit écran (téléphone tourné) : compacter les paddings */
+        @media (orientation: landscape) and (max-height: 500px) {
+          .adm-panel { width: min(360px, 60vw) !important; padding: 10px 12px 14px !important; }
+          .adm-btn { top: 8px !important; right: 8px !important; width: 38px !important; height: 38px !important; }
         }
       `}</style>
       <img src={citymap} alt="Plan de la ville pour le jeu de taxi" className="tt-map" />
