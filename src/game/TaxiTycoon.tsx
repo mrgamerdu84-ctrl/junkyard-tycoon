@@ -1699,18 +1699,14 @@ export default function TaxiTycoon() {
               angle: -90 + admin.hqRotation, // taxi nez vers le bâtiment
             };
           };
-          // Détermine quels taxis sont parqués
+          // Tout taxi idle ou en dépôt est garé visuellement dans le QG
+          // (sa logique de retour s'est déjà assurée qu'il a rejoint le QG).
           const parked: { taxi: Taxi; slot: number }[] = [];
           const parkedIds = new Set<number>();
           taxisRef.current.forEach((t) => {
             if (t.mode === "depositing" || t.mode === "idle") {
-              const here = taxiXY(t);
-              const dx = here.x - admin.hqX;
-              const dy = here.y - admin.hqY;
-              if (dx * dx + dy * dy <= 70 * 70) {
-                parked.push({ taxi: t, slot: 0 });
-                parkedIds.add(t.id);
-              }
+              parked.push({ taxi: t, slot: 0 });
+              parkedIds.add(t.id);
             }
           });
 
