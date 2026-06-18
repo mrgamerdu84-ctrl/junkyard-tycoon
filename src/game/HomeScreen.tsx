@@ -182,8 +182,11 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
       <UpdateNotification />
 
       <div className="hs-btns">
-        {displayName !== "Chauffeur" && (
-          <div className="hs-name-badge">👤 {displayName}</div>
+        {effectiveName !== "Chauffeur" && (
+          <div className="hs-name-badge">
+            {user ? "🔒" : "👤"} {effectiveName}
+            {user && <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 6 }}>(compte en ligne)</span>}
+          </div>
         )}
         <button className="hs-btn" onClick={() => setLoading(true)}>
           Jouer ▶
@@ -194,9 +197,18 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         <button className="hs-btn" onClick={() => { resetTutorial(); setShowTutorial(true); }}>
           📖 Tuto
         </button>
-        <button className="hs-btn" onClick={() => { setPseudoInput(getPlayerName()); setShowPseudo(true); }}>
+        <button className="hs-btn" onClick={() => { setPseudoInput(user ? cloudPseudo : getPlayerName()); setShowPseudo(true); }}>
           ✏️ Pseudo
         </button>
+        {user ? (
+          <button className="hs-btn" style={{ background: "linear-gradient(180deg,#6b7280,#374151)", color: "#fff", boxShadow: "0 6px 0 #1f2937, 0 12px 20px rgba(0,0,0,0.5)" }} onClick={() => signOut()}>
+            🚪 Déconnexion
+          </button>
+        ) : (
+          <button className="hs-btn" style={{ background: "linear-gradient(180deg,#10b981,#059669)", color: "#fff", boxShadow: "0 6px 0 #064e3b, 0 12px 20px rgba(0,0,0,0.5)" }} onClick={() => navigate({ to: "/auth" })}>
+            🔐 Connexion
+          </button>
+        )}
         <button
           className="hs-btn"
           onClick={() => {
