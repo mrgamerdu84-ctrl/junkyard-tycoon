@@ -236,7 +236,8 @@ function Vehicle({
 
 
 // Composants SVG conservés pour référence/legacy (non utilisés depuis l'image PNG).
-void CarSVG; void VanSVG; void TruckSVG; void HatchSVG; void PEDESTRIANS;
+void CarSVG; void VanSVG; void TruckSVG; void HatchSVG;
+
 
 
 // === Piétons photos qui marchent sur les trottoirs ===
@@ -350,6 +351,8 @@ const PEDESTRIANS: PedSpec[] = [
   { pathIdx: 2, duration: 155, delay: -120,side:  1, shirt: "#ffffff", pants: "#0b1220", skin: "#a06c44", scale: 0.83 },
   { pathIdx: 2, duration: 200, delay: -170,side: -1, shirt: "#facc15", pants: "#374151", skin: "#f1c79b", flip: true, scale: 0.88 },
 ];
+void PEDESTRIANS;
+
 
 // Largeur d'asphalte visible sur la carte ≈ 28-34px (stroke). On place
 // les piétons à 34px du centre du path => clairement sur le trottoir,
