@@ -1,10 +1,13 @@
 /* ============================================================
- * LEADERBOARD — Classement quotidien local + récompense hebdo.
+ * LEADERBOARD — Classement quotidien local + sync online.
  * ============================================================
  * Stocke les gains par jour (YYYY-MM-DD) dans localStorage.
- * Tous les lundis, le meilleur jour de la semaine écoulée
- * débloque le "Taxi d'Or" pour la semaine suivante.
+ * Si l'utilisateur est connecté, les scores sont aussi sync
+ * vers Supabase (table daily_scores) — chaque joueur ne voit
+ * QUE ses propres scores grâce aux RLS policies.
  * ============================================================ */
+import { supabase } from "@/integrations/supabase/client";
+
 
 const SCORES_KEY = "tt-daily-scores";
 const UNLOCK_KEY = "tt-special-taxi-unlocked";
