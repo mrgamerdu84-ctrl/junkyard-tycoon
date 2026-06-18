@@ -965,23 +965,10 @@ export default function TaxiTycoon() {
       if (policeCarsRef.current.length > 0) {
         const nowMs = performance.now();
 
-        // 1) Trigger aléatoire d'une infraction par un rival mobile (toutes les ~25-40 s)
-        if (
-          wantedRivalIdRef.current === null &&
-          nowMs - lastViolationRef.current > 25000 + Math.random() * 15000 &&
-          rivalTaxisRef.current.length > 0
-        ) {
-          const movingRivals = rivalTaxisRef.current.filter(r => r.mode !== "idle");
-          if (movingRivals.length > 0) {
-            const victim = movingRivals[Math.floor(Math.random() * movingRivals.length)];
-            wantedRivalIdRef.current = victim.id;
-            wantedUntilRef.current = nowMs + 20000;
-            lastViolationRef.current = nowMs;
-            showToast("🚨 Rival Cabs grille un feu — la police arrive !");
-          } else {
-            lastViolationRef.current = nowMs;
-          }
-        }
+        // 1) Plus de déclenchement aléatoire : la police n'arrête JAMAIS
+        //    rivaux/PNJ sans raison. Une arrestation ne survient que sur
+        //    vraie infraction (radar = excès de vitesse, planque = excès
+        //    de vitesse, ou collision déclenchée ailleurs dans le code).
         if (wantedRivalIdRef.current !== null && nowMs > wantedUntilRef.current) {
           wantedRivalIdRef.current = null;
         }
