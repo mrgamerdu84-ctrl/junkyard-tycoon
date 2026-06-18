@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react";
 import bgAsset from "@/assets/home-bg.png.asset.json";
 import { UpdateNotification } from "@/components/UpdateNotification";
+import TutorialDialog from "@/components/TutorialDialog";
+import LeaderboardPanel from "@/components/LeaderboardPanel";
+import { hasSeenTutorial, resetTutorial } from "@/lib/leaderboard";
 
 export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  // Premier lancement → tuto auto
+  useEffect(() => {
+    if (!hasSeenTutorial()) setShowTutorial(true);
+  }, []);
+
 
   useEffect(() => {
     if (!loading) return;
@@ -103,6 +114,12 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         <button className="hs-btn" onClick={() => setLoading(true)}>
           Jouer ▶
         </button>
+        <button className="hs-btn" onClick={() => setShowLeaderboard(true)}>
+          🏆 Classement
+        </button>
+        <button className="hs-btn" onClick={() => { resetTutorial(); setShowTutorial(true); }}>
+          📖 Tuto
+        </button>
         <button
           className="hs-btn"
           onClick={() => {
@@ -115,6 +132,10 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
           APK
         </button>
       </div>
+
+      {showTutorial && <TutorialDialog onClose={() => setShowTutorial(false)} />}
+      {showLeaderboard && <LeaderboardPanel onClose={() => setShowLeaderboard(false)} />}
     </div>
   );
 }
+
