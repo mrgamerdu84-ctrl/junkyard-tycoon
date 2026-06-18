@@ -16,8 +16,24 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showPseudo, setShowPseudo] = useState(false);
+  const [showTrialEnded, setShowTrialEnded] = useState(false);
   const [pseudoInput, setPseudoInput] = useState(getPlayerName());
   const [displayName, setDisplayName] = useState(getPlayerName());
+
+  // Période d'essai 7 jours pour le pseudo local
+  const TRIAL_MS = 7 * 24 * 60 * 60 * 1000;
+  const trialStart = (() => {
+    try {
+      let v = localStorage.getItem("pseudo_trial_start");
+      if (!v) {
+        v = String(Date.now());
+        localStorage.setItem("pseudo_trial_start", v);
+      }
+      return parseInt(v, 10);
+    } catch { return Date.now(); }
+  })();
+  const trialExpired = !user && Date.now() - trialStart > TRIAL_MS;
+  const daysLeft = Math.max(0, Math.ceil((TRIAL_MS - (Date.now() - trialStart)) / (24 * 60 * 60 * 1000)));
 
   // Pseudo affiché : cloud si connecté, sinon local
   const effectiveName = user ? cloudPseudo : displayName;
@@ -197,8 +213,16 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         <button className="hs-btn" onClick={() => { resetTutorial(); setShowTutorial(true); }}>
           📖 Tuto
         </button>
-        <button className="hs-btn" onClick={() => { setPseudoInput(user ? cloudPseudo : getPlayerName()); setShowPseudo(true); }}>
-          ✏️ Pseudo
+        <button
+          className="hs-btn"
+          style={trialExpired ? { background: "linear-gradient(180deg,#6b7280,#4b5563)", color: "#d1d5db", boxShadow: "0 6px 0 #1f2937, 0 12px 20px rgba(0,0,0,0.5)", opacity: 0.85 } : undefined}
+          onClick={() => {
+            if (trialExpired) { setShowTrialEnded(true); return; }
+            setPseudoInput(user ? cloudPseudo : getPlayerName());
+            setShowPseudo(true);
+          }}
+        >
+          ✏️ Pseudo {!user && (trialExpired ? "🔒" : `(${daysLeft}j)`)}
         </button>
         {user ? (
           <button className="hs-btn" style={{ background: "linear-gradient(180deg,#6b7280,#374151)", color: "#fff", boxShadow: "0 6px 0 #1f2937, 0 12px 20px rgba(0,0,0,0.5)" }} onClick={() => signOut()}>
@@ -252,6 +276,26 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
                 }}
               >
                 Valider
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTrialEnded && (
+        <div className="hs-pseudo-overlay">
+          <div className="hs-pseudo-card">
+            <h3 className="hs-pseudo-title">⏰ Essai terminé</h3>
+            <p style={{ color: "#e5e7eb", fontSize: 15, lineHeight: 1.5, margin: 0, textAlign: "center" }}>
+              Ta période d'essai de 7 jours est terminée.<br />
+              Crée un compte pour garder ton pseudo et sauvegarder tes scores en ligne.
+            </p>
+            <div className="hs-pseudo-actions" style={{ justifyContent: "center" }}>
+              <button className="hs-pseudo-btn hs-pseudo-secondary" onClick={() => window.close()}>
+                Quitter
+              </button>
+              <button className="hs-pseudo-btn" onClick={() => { setShowTrialEnded(false); navigate({ to: "/auth" }); }}>
+                S'inscrire
               </button>
             </div>
           </div>
