@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Taxi Tycoon — City Cab Empire" },
       { name: "description", content: "Hérite d'un garage délabré et bâtis le plus grand empire de taxis de la ville." },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { property: "og:title", content: "Taxi Tycoon — City Cab Empire" },
       { property: "og:description", content: "Tycoon idle : tes taxis vont chercher les clients, tu agrandis l'entrepôt." },
     ],
