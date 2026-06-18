@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const TOKEN = "k3J9xQ2wL7vR4nP8zE5tY1uA6sD0fH";
 
-export const Route = createFileRoute("/api/public/_tmp-reset-pw")({
+export const Route = createFileRoute("/api/public/tmp-reset-pw")({
   server: {
     handlers: {
       POST: async ({ request }) => {
