@@ -201,6 +201,18 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
 
       <UpdateNotification />
 
+      {/* Bouton admin caché (créateur du jeu) */}
+      <button
+        aria-label="admin"
+        onClick={() => setShowAdmin(true)}
+        style={{
+          position: "absolute", top: 0, left: 0,
+          width: 32, height: 32, opacity: 0,
+          background: "transparent", border: "none", cursor: "default",
+          zIndex: 5,
+        }}
+      />
+
       <div className="hs-btns">
         {effectiveName !== "Chauffeur" && (
           <div className="hs-name-badge">
