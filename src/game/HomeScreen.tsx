@@ -16,8 +16,24 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showPseudo, setShowPseudo] = useState(false);
+  const [showTrialEnded, setShowTrialEnded] = useState(false);
   const [pseudoInput, setPseudoInput] = useState(getPlayerName());
   const [displayName, setDisplayName] = useState(getPlayerName());
+
+  // Période d'essai 7 jours pour le pseudo local
+  const TRIAL_MS = 7 * 24 * 60 * 60 * 1000;
+  const trialStart = (() => {
+    try {
+      let v = localStorage.getItem("pseudo_trial_start");
+      if (!v) {
+        v = String(Date.now());
+        localStorage.setItem("pseudo_trial_start", v);
+      }
+      return parseInt(v, 10);
+    } catch { return Date.now(); }
+  })();
+  const trialExpired = !user && Date.now() - trialStart > TRIAL_MS;
+  const daysLeft = Math.max(0, Math.ceil((TRIAL_MS - (Date.now() - trialStart)) / (24 * 60 * 60 * 1000)));
 
   // Pseudo affiché : cloud si connecté, sinon local
   const effectiveName = user ? cloudPseudo : displayName;
