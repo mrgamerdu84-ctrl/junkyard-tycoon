@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDefisRouteImport } from './routes/_authenticated/defis'
 import { Route as ApiPublicUploadApkRouteImport } from './routes/api/public/upload-apk'
@@ -38,15 +39,19 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDefisRoute = AuthenticatedDefisRouteImport.update({
-  id: '/_authenticated/defis',
+  id: '/defis',
   path: '/defis',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicUploadApkRoute = ApiPublicUploadApkRouteImport.update({
   id: '/api/public/upload-apk',
@@ -82,6 +87,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/mentions-legales': typeof MentionsLegalesRoute
@@ -114,6 +120,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/auth'
     | '/download'
     | '/mentions-legales'
@@ -125,11 +132,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   DownloadRoute: typeof DownloadRoute
   MentionsLegalesRoute: typeof MentionsLegalesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  AuthenticatedDefisRoute: typeof AuthenticatedDefisRoute
   ApiPublicRadioTtsRoute: typeof ApiPublicRadioTtsRoute
   ApiPublicUploadApkRoute: typeof ApiPublicUploadApkRoute
 }
@@ -164,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -176,7 +190,7 @@ declare module '@tanstack/react-router' {
       path: '/defis'
       fullPath: '/defis'
       preLoaderRoute: typeof AuthenticatedDefisRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/upload-apk': {
       id: '/api/public/upload-apk'
@@ -195,13 +209,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDefisRoute: typeof AuthenticatedDefisRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDefisRoute: AuthenticatedDefisRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   DownloadRoute: DownloadRoute,
   MentionsLegalesRoute: MentionsLegalesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  AuthenticatedDefisRoute: AuthenticatedDefisRoute,
   ApiPublicRadioTtsRoute: ApiPublicRadioTtsRoute,
   ApiPublicUploadApkRoute: ApiPublicUploadApkRoute,
 }
