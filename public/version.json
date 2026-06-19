@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "buildId": "2026-06-19T08:26:03.557Z",
-  "builtAt": 1781857563557,
-  "changelog": "Mise à jour automatique active"
+  "version": "1.0.8",
+  "buildId": "2026-06-19T09:00:00.000Z",
+  "builtAt": 1781859600000,
+  "changelog": "Itinéraire visible + duel score Joueur vs Rival"
 }
