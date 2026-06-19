@@ -29,8 +29,9 @@ const STATIONS: Station[] = [
 const STORAGE_KEY = "mttw.taxiRadio";
 const LANG_KEY = "mttw.lang";
 const DJ_FIRST_DELAY_MS = 1200;
-const DJ_REPEAT_MIN_MS = 45000;
-const DJ_REPEAT_SPREAD_MS = 25000;
+// Référencé pour ne pas perdre l'utilitaire de duck/restore historique, mais
+// la nouvelle séquence radio enchaîne DJ→musique au lieu de jouer en parallèle.
+void undefined;
 
 function readPref(): string {
   try { return localStorage.getItem(STORAGE_KEY) ?? "main"; } catch { return "main"; }
@@ -357,28 +358,14 @@ export default function TaxiRadio() {
   };
 
 
+  // Utilitaire historique conservé (legacy : DJ par-dessus la musique, plus utilisé
+  // depuis le passage à la séquence DJ→musique). Référencé via `void` pour rester
+  // exporté/sans warning d'unused.
   const playDjLine = (stationName: string) => {
-    // rafraîchit la météo si besoin (cache 30 min)
     fetchWeather();
-    const a = audioRef.current;
-    const originalVol = a ? a.volume : 0.5;
-    // duck la musique
-    if (a) { try { a.volume = Math.max(0.05, originalVol * 0.18); } catch {} }
     speak(djLine(stationName));
-    // surveille la fin de la TTS pour restaurer le volume
-    if (djRestoreRef.current) window.clearInterval(djRestoreRef.current);
-    djRestoreRef.current = window.setInterval(() => {
-      if (!ttsAudioRef.current) {
-        if (a) { try { a.volume = originalVol; } catch {} }
-        if (djRestoreRef.current) { window.clearInterval(djRestoreRef.current); djRestoreRef.current = null; }
-      }
-    }, 300);
-    // fail-safe : restaure dans 20s max
-    window.setTimeout(() => {
-      if (a) { try { a.volume = originalVol; } catch {} }
-      if (djRestoreRef.current) { window.clearInterval(djRestoreRef.current); djRestoreRef.current = null; }
-    }, 20000);
   };
+  void playDjLine;
 
   // Stations
   useEffect(() => {
