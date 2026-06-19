@@ -48,6 +48,14 @@ export const TAXI_COLORS = [
   { id: "yellow", name: "Jaune", body: "#f5c542", trim: "#9c7a1c" },
 ];
 
+export const TAXI_PAINTS = [
+  { id: "blue", name: "Bleu joueur", color: "#38bdf8", filter: "hue-rotate(172deg) saturate(1.65) brightness(1.03)" },
+  { id: "yellow", name: "Jaune taxi", color: "#f5c542", filter: "none" },
+  { id: "green", name: "Vert", color: "#22c55e", filter: "hue-rotate(92deg) saturate(1.55) brightness(0.96)" },
+  { id: "pink", name: "Rose", color: "#ec4899", filter: "hue-rotate(305deg) saturate(1.45) brightness(1.05)" },
+  { id: "white", name: "Blanc", color: "#f8fafc", filter: "grayscale(1) brightness(1.45) contrast(0.95)" },
+] as const;
+
 type TaxiMode = "idle" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling" | "depositing";
 type LanePosition = { x: number; y: number; angle: number };
 type Taxi = {
@@ -150,6 +158,7 @@ type SaveData = {
   hqProductionLvl: number; // -15% cooldown sortie par niveau (0..5)
   hqRevenueLvl: number;    // +10% revenu par niveau (0..5)
   cityFund: number;        // 💰 Caisse de la ville (alimentée par les amendes)
+  playerTaxiColor: string; // couleur visuelle du taxi joueur
 };
 
 const HQ_UPGRADE_MAX = 5;
@@ -188,6 +197,7 @@ const DEFAULT_SAVE: SaveData = {
   hqProductionLvl: 0,
   hqRevenueLvl: 0,
   cityFund: 0,
+  playerTaxiColor: "blue",
 };
 
 
@@ -214,12 +224,16 @@ function TaxiSprite({
   moving,
   image,
   faceRight,
+  paintFilter = "none",
+  markerColor,
   size = 36,
 }: {
   withClient: boolean;
   moving: boolean;
   image: string;
   faceRight: boolean;
+  paintFilter?: string;
+  markerColor?: string;
   size?: number;
 }) {
   // Side-view PNG on transparent square. Car body fills ~70% of width and
@@ -235,8 +249,9 @@ function TaxiSprite({
           <animateTransform attributeName="transform" type="translate" values="0 -0.3; 0 0.3; 0 -0.3" dur="0.22s" repeatCount="indefinite" />
         )}
         <g transform={faceRight ? "rotate(90)" : "rotate(-90)"}>
-          <image href={image} x={-S / 2} y={-S / 2} width={S} height={S} preserveAspectRatio="xMidYMid meet" />
+          <image href={image} x={-S / 2} y={-S / 2} width={S} height={S} preserveAspectRatio="xMidYMid meet" style={{ filter: paintFilter }} />
         </g>
+        {markerColor && <circle cx="0" cy={-S * 0.56} r="4.2" fill={markerColor} stroke="#0a0c10" strokeWidth="1.2" />}
         {withClient && (
           <g transform="translate(0,-4)">
             <circle r="3" fill="#ffd9b0" stroke="#1a1d22" strokeWidth="0.5" />
@@ -1646,15 +1661,24 @@ export default function TaxiTycoon() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const allLiveries = useMemo(() => getAllLiveries(), []);
   const currentLivery = allLiveries.find((l) => l.id === save.liveryId) ?? allLiveries[0];
+  const currentPaint = TAXI_PAINTS.find((p) => p.id === save.playerTaxiColor) ?? TAXI_PAINTS[0];
 
-  // Synchronise la livrée si le joueur la change depuis le profil
+  // Synchronise la livrée/couleur si le joueur les change depuis le profil
   useEffect(() => {
     const onLivery = (e: Event) => {
       const id = (e as CustomEvent<string>).detail;
       if (typeof id === "string") setSave((s) => ({ ...s, liveryId: id }));
     };
+    const onColor = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (typeof id === "string") setSave((s) => ({ ...s, playerTaxiColor: id }));
+    };
     window.addEventListener("jce:livery-changed", onLivery);
-    return () => window.removeEventListener("jce:livery-changed", onLivery);
+    window.addEventListener("jce:taxi-color-changed", onColor);
+    return () => {
+      window.removeEventListener("jce:livery-changed", onLivery);
+      window.removeEventListener("jce:taxi-color-changed", onColor);
+    };
   }, []);
 
 
@@ -1947,7 +1971,7 @@ export default function TaxiTycoon() {
           const p = circuitAt(ct.pos);
           return (
             <g key={ct.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
-              <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} withClient={false} moving={true} />
+              <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} paintFilter={currentPaint.filter} markerColor={currentPaint.color} withClient={false} moving={true} />
             </g>
           );
         })}
@@ -2190,7 +2214,7 @@ export default function TaxiTycoon() {
             return (
               <g key={taxi.id}>
                 <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
-                  <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling" && taxi.mode !== "depositing"} />
+                  <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} paintFilter={currentPaint.filter} markerColor={currentPaint.color} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling" && taxi.mode !== "depositing"} />
                 </g>
                 {/* Mini jauge essence sous le taxi */}
                 <g transform={`translate(${p.x - 12},${p.y + 22})`}>
@@ -2423,6 +2447,20 @@ export default function TaxiTycoon() {
                 <h3>🏁 Garage — Livrées de taxi</h3>
                 <button className="tt-modal-x" onClick={() => setGarageOpen(false)}>×</button>
               </div>
+              <p className="tt-modal-sub">Couleur du taxi joueur :</p>
+              <div className="tt-paint-grid">
+                {TAXI_PAINTS.map((paint) => (
+                  <button
+                    key={paint.id}
+                    className={`tt-paint ${save.playerTaxiColor === paint.id ? "selected" : ""}`}
+                    onClick={() => setSave((s) => ({ ...s, playerTaxiColor: paint.id }))}
+                    title={paint.name}
+                  >
+                    <span style={{ background: paint.color }} />
+                    {paint.name}
+                  </button>
+                ))}
+              </div>
               <p className="tt-modal-sub">Choisis le modèle de ta flotte :</p>
               <div className="tt-livery-grid">
                 {allLiveries.map((l) => (
@@ -2594,6 +2632,17 @@ export default function TaxiTycoon() {
         .tt-modal-h h3 { margin: 0; color: #fde68a; font-size: 15px; letter-spacing: 0.5px; }
         .tt-modal-x { background: transparent; border: none; color: #8a8e94; font-size: 26px; line-height: 1; cursor: pointer; padding: 0 4px; }
         .tt-modal-sub { color: #9ca3af; font-size: 11px; margin: 0 0 12px; }
+        .tt-paint-grid {
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+          gap: 8px; margin-bottom: 14px;
+        }
+        .tt-paint {
+          min-height: 38px; display: flex; align-items: center; justify-content: center; gap: 7px;
+          background: #14171c; border: 2px solid #2a2f38; border-radius: 8px;
+          color: #e8edf2; font-size: 11px; font-weight: 800; cursor: pointer;
+        }
+        .tt-paint span { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.65); box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+        .tt-paint.selected { border-color: #f5c542; background: #20231a; }
         .tt-livery-grid {
           display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
           gap: 8px;

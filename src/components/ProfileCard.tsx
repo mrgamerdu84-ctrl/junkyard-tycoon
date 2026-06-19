@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AvatarKind } from "@/lib/useAuth";
 import avatarMan from "@/assets/avatar-man.png";
 import avatarWoman from "@/assets/avatar-woman.png";
-import { getAllLiveries } from "@/game/TaxiTycoon";
+import { getAllLiveries, TAXI_PAINTS } from "@/game/TaxiTycoon";
 
 const TT_SAVE_KEY = "taxi-tycoon-v4";
 
@@ -34,15 +34,25 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
     } catch {}
     return "classic";
   });
+  const [taxiColor, setTaxiColor] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem(TT_SAVE_KEY);
+      if (raw) return JSON.parse(raw).playerTaxiColor ?? "blue";
+    } catch {}
+    return "blue";
+  });
+  const currentPaint = TAXI_PAINTS.find((p) => p.id === taxiColor) ?? TAXI_PAINTS[0];
   useEffect(() => {
     try {
       const raw = localStorage.getItem(TT_SAVE_KEY);
       const save = raw ? JSON.parse(raw) : {};
       save.liveryId = liveryId;
+      save.playerTaxiColor = taxiColor;
       localStorage.setItem(TT_SAVE_KEY, JSON.stringify(save));
       window.dispatchEvent(new CustomEvent("jce:livery-changed", { detail: liveryId }));
+      window.dispatchEvent(new CustomEvent("jce:taxi-color-changed", { detail: taxiColor }));
     } catch {}
-  }, [liveryId]);
+  }, [liveryId, taxiColor]);
 
   if (!user) return null;
 
@@ -170,6 +180,28 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
 
         <div className="pc-row">
           <div className="pc-label">Mon taxi ({liveries.length} modèles)</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 10 }}>
+            {TAXI_PAINTS.map((paint) => (
+              <button
+                key={paint.id}
+                type="button"
+                onClick={() => setTaxiColor(paint.id)}
+                title={paint.name}
+                style={{
+                  height: 34,
+                  borderRadius: 8,
+                  border: taxiColor === paint.id ? "2px solid #f5c542" : "2px solid #374151",
+                  background: "#0a0c10",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <span style={{ width: 20, height: 20, borderRadius: "50%", background: paint.color, border: "2px solid rgba(255,255,255,0.7)" }} />
+              </button>
+            ))}
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, maxHeight: 220, overflowY: "auto", padding: 2 }}>
             {liveries.map((l) => (
               <button
@@ -182,7 +214,7 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
                   borderRadius: 8, padding: 6, cursor: "pointer", textAlign: "center",
                 }}
               >
-                <img src={l.image} alt={l.name} style={{ width: "100%", height: 42, objectFit: "contain", transform: l.faceRight ? undefined : "scaleX(-1)" }} />
+                <img src={l.image} alt={l.name} style={{ width: "100%", height: 42, objectFit: "contain", transform: l.faceRight ? undefined : "scaleX(-1)", filter: currentPaint.filter }} />
                 <div style={{ fontSize: 10, color: "#e5e7eb", fontWeight: 700, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.name}</div>
                 <div style={{ fontSize: 8, color: "#8a8e94" }}>{l.city}</div>
               </button>
