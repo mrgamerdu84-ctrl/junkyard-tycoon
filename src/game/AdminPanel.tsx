@@ -131,16 +131,19 @@ export default function AdminPanel() {
     <>
       <style>{`
         .adm-btn {
-          position: absolute; top: 14px; right: 14px; z-index: 50;
-          width: 44px; height: 44px; border-radius: 50%; border: none;
-          background: rgba(20,22,28,0.85); color: #f5c542; font-size: 22px;
-          cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          position: fixed;
+          top: max(14px, env(safe-area-inset-top, 0px));
+          right: max(14px, env(safe-area-inset-right, 0px));
+          z-index: 9999;
+          width: 48px; height: 48px; border-radius: 50%; border: 2px solid #f5c542;
+          background: rgba(20,22,28,0.92); color: #f5c542; font-size: 24px;
+          cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.6);
           display: flex; align-items: center; justify-content: center;
           backdrop-filter: blur(8px);
         }
         .adm-btn:hover { background: rgba(40,42,50,0.95); }
         .adm-overlay {
-          position: absolute; inset: 0; z-index: 49;
+          position: fixed; inset: 0; z-index: 9998;
           background: rgba(0,0,0,0.5);
         }
         .adm-panel {
