@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AvatarKind } from "@/lib/useAuth";
 import avatarMan from "@/assets/avatar-man.png";
 import avatarWoman from "@/assets/avatar-woman.png";
-import { getAllLiveries } from "@/game/TaxiTycoon";
+import { getAllLiveries, TAXI_PAINTS } from "@/game/TaxiTycoon";
 
 const TT_SAVE_KEY = "taxi-tycoon-v4";
 
@@ -34,15 +34,25 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
     } catch {}
     return "classic";
   });
+  const [taxiColor, setTaxiColor] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem(TT_SAVE_KEY);
+      if (raw) return JSON.parse(raw).playerTaxiColor ?? "blue";
+    } catch {}
+    return "blue";
+  });
+  const currentPaint = TAXI_PAINTS.find((p) => p.id === taxiColor) ?? TAXI_PAINTS[0];
   useEffect(() => {
     try {
       const raw = localStorage.getItem(TT_SAVE_KEY);
       const save = raw ? JSON.parse(raw) : {};
       save.liveryId = liveryId;
+      save.playerTaxiColor = taxiColor;
       localStorage.setItem(TT_SAVE_KEY, JSON.stringify(save));
       window.dispatchEvent(new CustomEvent("jce:livery-changed", { detail: liveryId }));
+      window.dispatchEvent(new CustomEvent("jce:taxi-color-changed", { detail: taxiColor }));
     } catch {}
-  }, [liveryId]);
+  }, [liveryId, taxiColor]);
 
   if (!user) return null;
 
