@@ -2018,9 +2018,9 @@ export default function TaxiTycoon() {
           return (
             <g
               style={{ cursor: "pointer", pointerEvents: "auto" }}
-              onClick={() => setGarageOpen(true)}
+              onClick={() => setShopOpen(true)}
             >
-              <title>TAXI DEPOT — cliquer pour personnaliser</title>
+              <title>QG — Parking taxis (cliquer pour la boutique)</title>
               <Depot
                 tier={tier}
                 x={depotXY.x}
