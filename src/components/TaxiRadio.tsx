@@ -69,6 +69,34 @@ export default function TaxiRadio() {
   const weatherFetchedAtRef = useRef<number>(0);
   const [weatherState, setWeatherState] = useState<{ tempC: number; code: number; city: string } | null>(null);
   const [nowTick, setNowTick] = useState<number | null>(null);
+  // "Heure des infos" : à chaque xx:00, toutes les radios passent aux infos pendant 10 min
+  const [newsHour, setNewsHour] = useState<boolean>(false);
+  const newsHourRef = useRef<boolean>(false);
+  useEffect(() => { newsHourRef.current = newsHour; }, [newsHour]);
+  useEffect(() => {
+    const check = () => {
+      const m = new Date().getMinutes();
+      const active = m < 10;
+      setNewsHour((prev) => (prev !== active ? active : prev));
+    };
+    check();
+    const t = window.setInterval(check, 20 * 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  const interludeRef = useRef<HTMLAudioElement | null>(null);
+  const playMusicInterlude = (url: string, ms: number = 15000) => {
+    try {
+      if (interludeRef.current) { try { interludeRef.current.pause(); } catch {} }
+      const a = new Audio(url);
+      a.volume = 0.5;
+      interludeRef.current = a;
+      a.play().catch(() => {});
+      window.setTimeout(() => {
+        try { a.pause(); } catch {}
+        if (interludeRef.current === a) interludeRef.current = null;
+      }, ms);
+    } catch {}
+  };
 
   // Tick toutes les 30s pour rafraîchir l'horloge + fetch météo au montage et toutes les 30 min
   useEffect(() => {
@@ -328,21 +356,31 @@ export default function TaxiRadio() {
     if (djTimerRef.current) { window.clearInterval(djTimerRef.current); djTimerRef.current = null; }
     if (djRestoreRef.current) { window.clearInterval(djRestoreRef.current); djRestoreRef.current = null; }
     setTicker("");
+    if (interludeRef.current) { try { interludeRef.current.pause(); } catch {} interludeRef.current = null; }
 
     if (!a) return;
     if (!st || st.id === "off") { a.pause(); return; }
 
+    // Musique d'intermède (utilisée pour Junky Infos et pendant l'heure des infos sur les radios musicales)
+    const defaultMusicUrl = STATIONS.find((s) => s.id === "main")?.url;
+
     if (st.tts) {
       a.pause();
       speak(WELCOME_JINGLE);
+      let cycle = 0;
       // première brève rapidement (météo / événement / trafic)
       window.setTimeout(() => {
         const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
         speak(AMBIENT_NEWS[idx]);
       }, 6000);
-      // puis enchaîne toutes les ~18s
+      // puis enchaîne toutes les ~18s, avec un intermède musical tous les 3 brèves
       ambientTimerRef.current = window.setInterval(() => {
+        cycle++;
+        if (cycle % 3 === 0 && defaultMusicUrl) {
+          playMusicInterlude(defaultMusicUrl, 15000);
+          return;
+        }
         const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
         speak(AMBIENT_NEWS[idx]);
@@ -351,6 +389,30 @@ export default function TaxiRadio() {
     }
 
     if (st.url) {
+      // Heure des infos : pendant les 10 premières minutes de chaque heure,
+      // les radios musicales basculent sur les brèves (avec courts intermèdes musicaux).
+      if (newsHour) {
+        a.pause();
+        speak(WELCOME_JINGLE);
+        let cycle = 0;
+        window.setTimeout(() => {
+          const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
+          ambientIdxRef.current++;
+          speak(AMBIENT_NEWS[idx]);
+        }, 4000);
+        ambientTimerRef.current = window.setInterval(() => {
+          cycle++;
+          if (cycle % 4 === 0 && st.url) {
+            playMusicInterlude(st.url, 12000);
+            return;
+          }
+          const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
+          ambientIdxRef.current++;
+          speak(AMBIENT_NEWS[idx]);
+        }, 18000);
+        return;
+      }
+
       if (a.src !== st.url) a.src = st.url;
       a.loop = !!st.loop;
       a.volume = st.volume ?? 0.5;
@@ -379,7 +441,7 @@ export default function TaxiRadio() {
         scheduleDj();
       }, DJ_FIRST_DELAY_MS) as unknown as number;
     }
-  }, [stationId, ready]);
+  }, [stationId, ready, newsHour]);
 
 
   useEffect(() => {
@@ -630,6 +692,12 @@ export default function TaxiRadio() {
               <span>{codeEmoji(w.code)} {w.tempC}°C</span>
             ) : (
               <span style={{ opacity: 0.7 }}>météo…</span>
+            )}
+            {newsHour && (
+              <>
+                <span style={{ opacity: 0.55 }}>•</span>
+                <span style={{ color: "#fde047" }}>📰 INFOS</span>
+              </>
             )}
           </div>
         );
