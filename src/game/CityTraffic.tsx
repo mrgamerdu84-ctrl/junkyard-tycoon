@@ -759,8 +759,8 @@ export default function CityTraffic() {
 
   return (
     <svg
-      viewBox="0 0 1920 1080"
-      preserveAspectRatio="xMidYMid slice"
+      viewBox={`0 0 ${WORLD_W} ${WORLD_H}`}
+      preserveAspectRatio="xMidYMid meet"
       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 5 }}
     >
       <defs>
@@ -777,7 +777,26 @@ export default function CityTraffic() {
         <filter id="jce-soft-shadow" x="-30%" y="-30%" width="160%" height="160%">
           <feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#000" floodOpacity="0.35" />
         </filter>
+        <pattern id="td-grass" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+          <rect width="32" height="32" fill="#6a7d52" />
+          <circle cx="8" cy="8" r="1.5" fill="#7d8f63" />
+          <circle cx="22" cy="18" r="1.5" fill="#7d8f63" />
+        </pattern>
+        <pattern id="td-asphalt" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+          <rect width="40" height="40" fill="#3a3d44" />
+          <circle cx="10" cy="10" r="0.8" fill="#4a4d54" />
+          <circle cx="28" cy="22" r="0.8" fill="#4a4d54" />
+        </pattern>
       </defs>
+
+      {/* Fond global noir derrière tout */}
+      <rect x={0} y={0} width={WORLD_W} height={WORLD_H} fill="#1a1d22" />
+
+      {/* Photo Pertuis dans le quadrant TL */}
+      <image href={citymap} x={0} y={0} width={1920} height={1080} preserveAspectRatio="xMidYMid slice" />
+
+      {/* 3 nouveaux quartiers procéduraux */}
+      <NewDistricts />
 
       <g opacity="0.12">
         {ROADS.map((d, i) => (
@@ -787,6 +806,7 @@ export default function CityTraffic() {
           <path key={`dash-${i}`} d={d} stroke="#f6d56a" strokeWidth="2.4" strokeDasharray="18 18" fill="none" opacity="0.72" />
         ))}
       </g>
+
 
 
 
