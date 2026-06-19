@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
-import { GAME_ASSETS } from "./gameAssets";
+import { GAME_ASSETS, listCustomVehicles } from "./gameAssets";
 import { shouldStopAhead, nowSeconds, registerAccident, clearAccident, getAccidents, type AccidentZone } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
 import { recordEarning, isSpecialTaxiUnlocked } from "@/lib/leaderboard";
@@ -115,6 +115,25 @@ export const LIVERIES: Livery[] = [
   { id: "executive", name: "Executive",    city: "Berline noire", roofLabel: "VIP",     roofBg: "#0a0c10", roofFg: "#fde047", stripe: "none",    stripeColor: "#0a0c10", image: TAXI_BLACK_URL,  faceRight: false },
   { id: "sport",    name: "Sport Cab",     city: "Coupé rouge",  roofLabel: "TAXI",     roofBg: "#1a1d22", roofFg: "#ffffff", stripe: "none",    stripeColor: "#1a1d22", image: TAXI_RED_URL,    faceRight: false },
 ];
+
+/** Liste complète des livrées : base + skins uploadés via le panel admin. */
+export function getAllLiveries(): Livery[] {
+  const customTaxis = listCustomVehicles()
+    .filter((v) => v.category === "taxi")
+    .map<Livery>((v) => ({
+      id: `custom_${v.id}`,
+      name: v.name,
+      city: "Custom (admin)",
+      roofLabel: "TAXI",
+      roofBg: "#1a1d22",
+      roofFg: "#fde047",
+      stripe: "none",
+      stripeColor: "#1a1d22",
+      image: v.url,
+      faceRight: true,
+    }));
+  return [...LIVERIES, ...customTaxis];
+}
 
 type SaveData = {
   money: number;
@@ -1624,7 +1643,18 @@ export default function TaxiTycoon() {
   const [shopOpen, setShopOpen] = useState(false);
   const [musicOn, setMusicOn] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const currentLivery = LIVERIES.find((l) => l.id === save.liveryId) ?? LIVERIES[0];
+  const allLiveries = useMemo(() => getAllLiveries(), []);
+  const currentLivery = allLiveries.find((l) => l.id === save.liveryId) ?? allLiveries[0];
+
+  // Synchronise la livrée si le joueur la change depuis le profil
+  useEffect(() => {
+    const onLivery = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (typeof id === "string") setSave((s) => ({ ...s, liveryId: id }));
+    };
+    window.addEventListener("jce:livery-changed", onLivery);
+    return () => window.removeEventListener("jce:livery-changed", onLivery);
+  }, []);
 
 
   // === Boucle de file de courses : tick du timer + expiration des offres ===
@@ -2383,7 +2413,7 @@ export default function TaxiTycoon() {
               </div>
               <p className="tt-modal-sub">Choisis le modèle de ta flotte :</p>
               <div className="tt-livery-grid">
-                {LIVERIES.map((l) => (
+                {allLiveries.map((l) => (
                   <button
                     key={l.id}
                     className={`tt-livery-card ${save.liveryId === l.id ? "selected" : ""}`}

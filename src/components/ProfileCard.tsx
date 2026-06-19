@@ -1,8 +1,11 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AvatarKind } from "@/lib/useAuth";
 import avatarMan from "@/assets/avatar-man.png";
 import avatarWoman from "@/assets/avatar-woman.png";
+import { getAllLiveries } from "@/game/TaxiTycoon";
+
+const TT_SAVE_KEY = "taxi-tycoon-v4";
 
 export const AVATAR_MAN = avatarMan;
 export const AVATAR_WOMAN = avatarWoman;
@@ -21,6 +24,25 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // Personnalisation taxi — lue/écrite dans la save locale du jeu
+  const liveries = getAllLiveries();
+  const [liveryId, setLiveryId] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem(TT_SAVE_KEY);
+      if (raw) return JSON.parse(raw).liveryId ?? "classic";
+    } catch {}
+    return "classic";
+  });
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(TT_SAVE_KEY);
+      const save = raw ? JSON.parse(raw) : {};
+      save.liveryId = liveryId;
+      localStorage.setItem(TT_SAVE_KEY, JSON.stringify(save));
+      window.dispatchEvent(new CustomEvent("jce:livery-changed", { detail: liveryId }));
+    } catch {}
+  }, [liveryId]);
 
   if (!user) return null;
 
@@ -145,6 +167,31 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
             📷 Importer une photo (max 2 Mo)
           </button>
         </div>
+
+        <div className="pc-row">
+          <div className="pc-label">Mon taxi ({liveries.length} modèles)</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, maxHeight: 220, overflowY: "auto", padding: 2 }}>
+            {liveries.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => setLiveryId(l.id)}
+                style={{
+                  background: liveryId === l.id ? "rgba(245,197,66,0.15)" : "#0a0c10",
+                  border: liveryId === l.id ? "2px solid #f5c542" : "2px solid #374151",
+                  borderRadius: 8, padding: 6, cursor: "pointer", textAlign: "center",
+                }}
+              >
+                <img src={l.image} alt={l.name} style={{ width: "100%", height: 42, objectFit: "contain", transform: l.faceRight ? undefined : "scaleX(-1)" }} />
+                <div style={{ fontSize: 10, color: "#e5e7eb", fontWeight: 700, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.name}</div>
+                <div style={{ fontSize: 8, color: "#8a8e94" }}>{l.city}</div>
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 10, color: "#8a8e94", marginTop: 4 }}>💡 De nouveaux modèles peuvent être ajoutés par l'admin.</div>
+        </div>
+
+
 
         <div className="pc-actions">
           <button className="pc-btn ghost" type="button" onClick={onClose}>Fermer</button>
