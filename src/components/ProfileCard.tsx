@@ -56,7 +56,8 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
     setSaving(true);
     try {
       const newPseudo = pseudoInput.trim() || "Chauffeur";
-      const updates: Record<string, unknown> = { pseudo: newPseudo, avatar_kind: kind };
+      const updates: { pseudo: string; avatar_kind: AvatarKind; avatar_url?: string | null } =
+        { pseudo: newPseudo, avatar_kind: kind };
       if (kind !== "photo") updates.avatar_url = null;
       const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
       if (error) throw error;
