@@ -89,7 +89,7 @@ type Job = {
 
 const DEFAULT_DEPOT_POS = 0.78; // fallback si mode "suit le circuit" (legacy)
 const SAVE_KEY = "taxi-tycoon-v4";
-const BASE_SPEED = 60; // px (sur viewBox 1920) par seconde
+const BASE_SPEED = 74; // px (sur viewBox 1920) par seconde — taxis un peu plus vifs que la circulation
 const SPEED_UPGRADE_COST_BASE = 800;
 const TAXI_COST_BASE = 600;
 const MAX_JOBS_BASE = 3;
