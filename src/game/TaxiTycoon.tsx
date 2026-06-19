@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
 import { GAME_ASSETS } from "./gameAssets";
-import { shouldStopAhead, nowSeconds } from "./trafficLights";
+import { shouldStopAhead, nowSeconds, registerAccident, clearAccident, getAccidents, type AccidentZone } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
 import { recordEarning, isSpecialTaxiUnlocked } from "@/lib/leaderboard";
 
@@ -510,12 +510,25 @@ export default function TaxiTycoon() {
     pos: number;
     target: number;
     lane?: LanePosition;
-    alertUntil: number;     // ms — si > now: sirène + vitesse rapide
-    nextAlertAt: number;    // ms — prochain déclenchement aléatoire
+    mode: "patrol" | "respond" | "onsite";
+    onsiteUntil: number;     // ms — fin d'intervention sur place
+    accidentId: number | null;
   };
   const emergencyRef = useRef<EmergencyVehicle[]>([]);
-  const EMERGENCY_SPEED = 70;      // px/s normal
-  const EMERGENCY_RUSH_SPEED = 165;// px/s en intervention
+  const EMERGENCY_SPEED = 70;       // px/s patrouille
+  const EMERGENCY_RUSH_SPEED = 165; // px/s en intervention (sirènes)
+
+  // === Accidents aléatoires ===
+  type Accident = AccidentZone & {
+    startedAt: number;
+    clearAt: number | null; // ms — quand les secours auront fini
+    responders: Set<number>;
+  };
+  const accidentsRef = useRef<Accident[]>([]);
+  const nextAccidentAtRef = useRef<number>(performance.now() + 25000 + Math.random() * 20000);
+  const accidentIdRef = useRef<number>(50000);
+  const ACCIDENT_BLOCK_MIN_MS = 9000;  // intervention sur place
+
 
 
 
@@ -756,7 +769,6 @@ export default function TaxiTycoon() {
     for (let i = 0; i < N; i++) if (!VILLAGE_PATHS.has(i)) allowed.push(i);
     if (allowed.length < 1) return;
     if (emergencyRef.current.length === 0) {
-      const now = performance.now();
       const mkVeh = (kind: "ambulance" | "firetruck", i: number): EmergencyVehicle => {
         const pIdx = allowed[i % allowed.length];
         const plen = pathLensRef.current[pIdx] ?? 0;
@@ -766,8 +778,9 @@ export default function TaxiTycoon() {
           pathIdx: pIdx,
           pos: (i / 2) * plen,
           target: plen - 1,
-          alertUntil: 0,
-          nextAlertAt: now + 25000 + Math.random() * 35000,
+          mode: "patrol",
+          onsiteUntil: 0,
+          accidentId: null,
         };
         syncVehicleLane(v);
         return v;
@@ -775,6 +788,7 @@ export default function TaxiTycoon() {
       emergencyRef.current.push(mkVeh("ambulance", 0));
       emergencyRef.current.push(mkVeh("firetruck", 1));
     }
+
     forceRender((n) => n + 1);
   }, [pathsReady]);
 
@@ -1303,32 +1317,109 @@ export default function TaxiTycoon() {
       rivalTaxisRef.current.forEach(syncVehicleLane);
       policeCarsRef.current.forEach(syncVehicleLane);
 
-      // ====== Véhicules d'urgence (ambulance / pompiers) ======
-      for (const ev of emergencyRef.current) {
-        const plen = pathLensRef.current[ev.pathIdx] ?? 0;
-        if (plen <= 1) continue;
-        // Déclenche aléatoirement une intervention (sirène + vitesse)
-        if (ev.alertUntil === 0 && performance.now() >= ev.nextAlertAt) {
-          ev.alertUntil = performance.now() + 8000 + Math.random() * 7000;
+      // ====== Accidents aléatoires + dispatch des secours ======
+      {
+        const tMs = performance.now();
+        // Spawn d'un nouvel accident périodique (1 max à la fois pour éviter le chaos)
+        if (accidentsRef.current.length === 0 && tMs >= nextAccidentAtRef.current) {
+          const allowed: number[] = [];
+          for (let i = 0; i < pathRefs.current.length; i++) if (!VILLAGE_PATHS.has(i)) allowed.push(i);
+          if (allowed.length > 0) {
+            const pIdx = allowed[Math.floor(Math.random() * allowed.length)];
+            const plen = pathLensRef.current[pIdx] ?? 0;
+            const sPos = 80 + Math.random() * Math.max(80, plen - 160);
+            const pt = pathRefs.current[pIdx]?.getPointAtLength(sPos);
+            if (pt) {
+              const id = ++accidentIdRef.current;
+              const kind: "vehicle" | "pedestrian" = Math.random() < 0.7 ? "vehicle" : "pedestrian";
+              const acc: Accident = {
+                id, pathIdx: pIdx, s: sPos, x: pt.x, y: pt.y, kind,
+                startedAt: tMs, clearAt: null, responders: new Set(),
+              };
+              accidentsRef.current.push(acc);
+              registerAccident({ id, pathIdx: pIdx, s: sPos, x: pt.x, y: pt.y, kind });
+              showToast(kind === "vehicle" ? "💥 Accident signalé ! Secours en route…" : "🚑 Piéton renversé ! Ambulance en route…");
+            }
+          }
+          nextAccidentAtRef.current = tMs + 40000 + Math.random() * 40000;
         }
-        if (performance.now() >= ev.alertUntil && ev.alertUntil !== 0) {
-          ev.alertUntil = 0;
-          ev.nextAlertAt = performance.now() + 25000 + Math.random() * 35000;
+
+        // Dispatch : tous les EV en patrol -> respond vers l'accident le plus proche
+        for (const ev of emergencyRef.current) {
+          if (ev.mode === "patrol" && accidentsRef.current.length > 0) {
+            const acc = accidentsRef.current[0];
+            ev.mode = "respond";
+            ev.accidentId = acc.id;
+            // snap sur le path de l'accident
+            const here = pathRefs.current[ev.pathIdx]?.getPointAtLength(ev.pos);
+            ev.pathIdx = acc.pathIdx;
+            ev.pos = here ? closestOnPath(acc.pathIdx, here.x, here.y) : ev.pos;
+            ev.target = acc.s;
+          }
         }
-        const alerting = ev.alertUntil > 0;
-        const baseSpeed = alerting ? EMERGENCY_RUSH_SPEED : EMERGENCY_SPEED;
-        const diff = ev.target - ev.pos;
-        const step = baseSpeed * dt;
-        if (Math.abs(diff) <= step) {
-          ev.target = ev.target > 1 ? 1 : Math.max(1, plen - 1);
-        } else {
-          const forward = diff > 0;
-          if (alerting || !shouldStopAhead(ev.pathIdx, ev.pos, forward, nowSeconds())) {
-            ev.pos += Math.sign(diff) * step;
+
+        // MAJ chaque véhicule d'urgence
+        for (const ev of emergencyRef.current) {
+          const plen = pathLensRef.current[ev.pathIdx] ?? 0;
+          if (plen <= 1) continue;
+          const acc = ev.accidentId != null ? accidentsRef.current.find(a => a.id === ev.accidentId) ?? null : null;
+
+          if (ev.mode === "onsite") {
+            if (acc) acc.responders.add(ev.id);
+            if (tMs >= ev.onsiteUntil) {
+              // Fin d'intervention pour ce véhicule
+              ev.mode = "patrol";
+              ev.accidentId = null;
+              ev.onsiteUntil = 0;
+              ev.target = ev.pos < plen / 2 ? plen - 1 : 1;
+            }
+            continue;
+          }
+
+          if (ev.mode === "respond") {
+            if (!acc) { ev.mode = "patrol"; ev.accidentId = null; continue; }
+            const diff = acc.s - ev.pos;
+            const step = EMERGENCY_RUSH_SPEED * dt;
+            if (Math.abs(diff) <= step) {
+              ev.pos = acc.s;
+              ev.mode = "onsite";
+              ev.onsiteUntil = tMs + ACCIDENT_BLOCK_MIN_MS + Math.random() * 4000;
+              acc.responders.add(ev.id);
+              if (!acc.clearAt) acc.clearAt = tMs + ACCIDENT_BLOCK_MIN_MS;
+            } else {
+              ev.pos += Math.sign(diff) * step;
+            }
+            continue;
+          }
+
+          // patrol
+          const diff = ev.target - ev.pos;
+          const step = EMERGENCY_SPEED * dt;
+          if (Math.abs(diff) <= step) {
+            ev.target = ev.target > 1 ? 1 : Math.max(1, plen - 1);
+          } else {
+            const forward = diff > 0;
+            if (!shouldStopAhead(ev.pathIdx, ev.pos, forward, nowSeconds())) {
+              ev.pos += Math.sign(diff) * step;
+            }
+          }
+        }
+
+        // Clôture des accidents : quand les responders ont fini ET clearAt atteint
+        for (let i = accidentsRef.current.length - 1; i >= 0; i--) {
+          const a = accidentsRef.current[i];
+          if (a.clearAt && tMs >= a.clearAt && a.responders.size > 0) {
+            const stillOnsite = emergencyRef.current.some(e => e.accidentId === a.id && e.mode === "onsite");
+            if (!stillOnsite) {
+              clearAccident(a.id);
+              accidentsRef.current.splice(i, 1);
+              showToast("✅ Accident dégagé, circulation rétablie.");
+            }
           }
         }
       }
       emergencyRef.current.forEach(syncVehicleLane);
+
 
 
       // ====== Circuit taxis : avance le long de la boucle ======
@@ -1869,11 +1960,35 @@ export default function TaxiTycoon() {
           );
         })}
 
-        {/* Véhicules d'urgence : ambulance + pompiers (sirène en intervention) */}
+        {/* Marqueurs d'accidents (triangle + fumée) */}
+        {accidentsRef.current.map((a) => (
+          <g key={`acc-${a.id}`} transform={`translate(${a.x},${a.y})`} pointerEvents="none">
+            <circle r="22" fill="#ef4444" opacity="0.18">
+              <animate attributeName="r" values="18;28;18" dur="1.4s" repeatCount="indefinite" />
+            </circle>
+            {/* fumée */}
+            <circle cx="-4" cy="-8" r="5" fill="#1f2937" opacity="0.55">
+              <animate attributeName="cy" values="-8;-16;-8" dur="2.4s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.55;0.1;0.55" dur="2.4s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="5" cy="-10" r="4" fill="#374151" opacity="0.5">
+              <animate attributeName="cy" values="-10;-18;-10" dur="2.8s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.5;0.05;0.5" dur="2.8s" repeatCount="indefinite" />
+            </circle>
+            {/* triangle de signalisation */}
+            <polygon points="0,-9 8,5 -8,5" fill="#fbbf24" stroke="#0b0d10" strokeWidth="1.2" />
+            <text x="0" y="3" textAnchor="middle" fontSize="7" fontWeight="900" fill="#0b0d10">!</text>
+            <text x="0" y="18" textAnchor="middle" fontSize="3.6" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">
+              {a.kind === "vehicle" ? "ACCIDENT" : "BLESSÉ"}
+            </text>
+          </g>
+        ))}
+
+
         {emergencyRef.current.map((ev) => {
           const movingForward = ev.target >= ev.pos;
           const p = ev.lane ?? getLaneXY(ev.pathIdx, ev.pos, movingForward);
-          const alerting = ev.alertUntil > 0;
+          const alerting = ev.mode === "respond" || ev.mode === "onsite";
           const t = Math.floor(performance.now() / 200) % 2;
           const href = ev.kind === "ambulance" ? AMBULANCE_URL : FIRETRUCK_URL;
           const W = ev.kind === "firetruck" ? 46 : 42;
