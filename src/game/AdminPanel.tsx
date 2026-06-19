@@ -674,7 +674,7 @@ function CustomVehiclesSection() {
   const confirmAdd = async () => {
     if (!pendingSrc) return;
     try {
-      const finalUrl = rotation === 0 ? pendingSrc : await rotateToDataUrl(pendingSrc, rotation);
+      const finalUrl = await rotateToDataUrl(pendingSrc, rotation);
       addCustomVehicle({
         name: name.trim() || VEHICLE_CATEGORY_LABELS[category].replace(/^\S+\s/, ""),
         url: finalUrl,
