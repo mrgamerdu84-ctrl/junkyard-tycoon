@@ -815,12 +815,68 @@ async function rotateToDataUrl(src: string, deg: VehicleRotation): Promise<strin
 
 async function guessVehicleRotation(src: string): Promise<VehicleRotation> {
   const img = await loadImage(src);
-  const bounds = getOpaqueBounds(img);
-  const w = bounds?.w ?? img.naturalWidth;
-  const h = bounds?.h ?? img.naturalHeight;
-  // Même si le fichier est carré avec beaucoup de transparence, on regarde le vrai véhicule :
-  // s'il est couché, on le remet automatiquement avant vers ↑ pour qu'il roule droit.
-  return w > h * 1.15 ? 270 : 0;
+  const bounds = getOpaqueBounds(img) ?? { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight };
+  const w = bounds.w, h = bounds.h;
+  if (w <= 0 || h <= 0) return 0;
+
+  // On extrait un masque alpha du véhicule réel (sans la transparence autour).
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return w > h * 1.15 ? 270 : 0;
+  ctx.drawImage(img, bounds.x, bounds.y, w, h, 0, 0, w, h);
+  let data: Uint8ClampedArray;
+  try { data = ctx.getImageData(0, 0, w, h).data; } catch { return w > h * 1.15 ? 270 : 0; }
+  const mask = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) mask[i] = data[i * 4 + 3] > 32 ? 1 : 0;
+
+  // Pour chaque rotation candidate, on évalue :
+  //  - symétrie gauche/droite (un véhicule vu du ciel est miroir sur l'axe vertical)
+  //  - bonus si le résultat est en portrait (plus haut que large)
+  //  - bonus si le bas est plus dense que le haut (capot/pare-brise => le nez devrait être en haut)
+  const rotations: VehicleRotation[] = [0, 90, 180, 270];
+  const getRotated = (deg: VehicleRotation, x: number, y: number): number => {
+    let sx = 0, sy = 0;
+    if (deg === 0) { sx = x; sy = y; }
+    else if (deg === 90) { sx = y; sy = w - 1 - x; }
+    else if (deg === 180) { sx = w - 1 - x; sy = h - 1 - y; }
+    else { sx = h - 1 - y; sy = x; }
+    if (sx < 0 || sy < 0 || sx >= w || sy >= h) return 0;
+    return mask[sy * w + sx];
+  };
+
+  let best: VehicleRotation = 0;
+  let bestScore = -Infinity;
+  for (const deg of rotations) {
+    const swap = deg === 90 || deg === 270;
+    const rw = swap ? h : w;
+    const rh = swap ? w : h;
+
+    let symMatch = 0, symTotal = 0;
+    for (let y = 0; y < rh; y++) {
+      for (let x = 0; x < Math.floor(rw / 2); x++) {
+        const a = getRotated(deg, x, y);
+        const b = getRotated(deg, rw - 1 - x, y);
+        if (a === b) symMatch++;
+        symTotal++;
+      }
+    }
+    const symScore = symTotal > 0 ? symMatch / symTotal : 0;
+
+    let topMass = 0, botMass = 0;
+    for (let y = 0; y < rh; y++) {
+      for (let x = 0; x < rw; x++) {
+        if (!getRotated(deg, x, y)) continue;
+        if (y < rh / 2) topMass++; else botMass++;
+      }
+    }
+    const portraitBonus = rh > rw ? 0.12 : 0;
+    const noseUpBonus = botMass > topMass * 1.05 ? 0.06 : 0;
+
+    const score = symScore + portraitBonus + noseUpBonus;
+    if (score > bestScore) { bestScore = score; best = deg; }
+  }
+  return best;
 }
 
 
