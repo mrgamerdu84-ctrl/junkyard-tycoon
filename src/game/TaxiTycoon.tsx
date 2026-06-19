@@ -1497,6 +1497,7 @@ export default function TaxiTycoon() {
               clearAccident(a.id);
               accidentsRef.current.splice(i, 1);
               showToast("✅ Accident dégagé, circulation rétablie.");
+              pushNews({ fr: "Bonne nouvelle : l'accident a été dégagé, la circulation reprend normalement.", en: "Good news: the accident has been cleared, traffic is back to normal." });
             }
           }
         }
