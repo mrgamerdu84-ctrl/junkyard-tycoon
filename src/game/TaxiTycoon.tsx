@@ -1192,6 +1192,19 @@ export default function TaxiTycoon() {
             continue;
           }
 
+          // ----- Mode CONTROL_WAIT : voiture stoppée, gyrophares, "contrôle" -----
+          if (pc.mode === "control_wait") {
+            if (pc.controlStoppedPos !== undefined) pc.pos = pc.controlStoppedPos;
+            if (nowMs > (pc.controlUntil ?? 0)) {
+              pc.mode = "patrol";
+              pc.controlUntil = undefined;
+              pc.controlStoppedPos = undefined;
+              const plen = pathLensRef.current[pc.pathIdx] ?? 0;
+              pc.target = pc.pos < plen / 2 ? plen - 1 : 1;
+            }
+            continue;
+          }
+
           // ----- Mode PATROL : aller-retour -----
           const diff = pc.target - pc.pos;
           const step = POLICE_SPEED * dt;
