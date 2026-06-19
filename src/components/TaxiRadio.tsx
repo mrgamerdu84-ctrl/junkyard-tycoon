@@ -51,6 +51,7 @@ export default function TaxiRadio() {
   const [stationId, setStationId] = useState<string>("main");
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [lang, setLang] = useState<"fr" | "en">("fr");
   const langRef = useRef<"fr" | "en">("fr");
   const [ticker, setTicker] = useState<string>("");
