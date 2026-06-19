@@ -1964,7 +1964,7 @@ export default function TaxiTycoon() {
         {emergencyRef.current.map((ev) => {
           const movingForward = ev.target >= ev.pos;
           const p = ev.lane ?? getLaneXY(ev.pathIdx, ev.pos, movingForward);
-          const alerting = ev.alertUntil > 0;
+          const alerting = ev.mode === "respond" || ev.mode === "onsite";
           const t = Math.floor(performance.now() / 200) % 2;
           const href = ev.kind === "ambulance" ? AMBULANCE_URL : FIRETRUCK_URL;
           const W = ev.kind === "firetruck" ? 46 : 42;
