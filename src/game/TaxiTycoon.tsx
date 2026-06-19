@@ -1916,8 +1916,8 @@ export default function TaxiTycoon() {
       {/* === Calque SVG du jeu === */}
       <svg
         ref={containerRef}
-        viewBox="0 0 1920 1080"
-        preserveAspectRatio="xMidYMid slice"
+        viewBox="0 0 3840 2160"
+        preserveAspectRatio="xMidYMid meet"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 4 }}
       >
         <defs>
