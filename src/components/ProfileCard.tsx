@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AvatarKind } from "@/lib/useAuth";
+import { tierFor } from "@/lib/license";
 import avatarMan from "@/assets/avatar-man.png";
 import avatarWoman from "@/assets/avatar-woman.png";
 import { getAllLiveries, TAXI_PAINTS } from "@/game/TaxiTycoon";
@@ -17,13 +18,22 @@ export function resolveAvatarSrc(kind: AvatarKind, url: string | null): string {
 }
 
 export default function ProfileCard({ onClose }: { onClose: () => void }) {
-  const { user, pseudo, avatarKind, avatarUrl, refresh } = useAuth();
+  const { user, pseudo, driverName, avatarKind, avatarUrl, licenseLevel, licenseXp, refresh } = useAuth();
   const [pseudoInput, setPseudoInput] = useState(pseudo);
+  const [driverNameInput, setDriverNameInput] = useState(driverName);
   const [kind, setKind] = useState<AvatarKind>(avatarKind);
   const [localPhoto, setLocalPhoto] = useState<string | null>(avatarUrl);
   const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // re-sync si useAuth charge après le mount
+  useEffect(() => { setPseudoInput(pseudo); }, [pseudo]);
+  useEffect(() => { setDriverNameInput(driverName); }, [driverName]);
+  useEffect(() => { setKind(avatarKind); }, [avatarKind]);
+  useEffect(() => { setLocalPhoto(avatarUrl); }, [avatarUrl]);
+
 
   // Personnalisation taxi — lue/écrite dans la save locale du jeu
   const liveries = getAllLiveries();
@@ -85,22 +95,34 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
 
   const save = async () => {
     setErr(null);
+    setSavedMsg(null);
     setSaving(true);
     try {
-      const newPseudo = pseudoInput.trim() || "Chauffeur";
-      const updates: { pseudo: string; avatar_kind: AvatarKind; avatar_url?: string | null } =
-        { pseudo: newPseudo, avatar_kind: kind };
+      if (!user) throw new Error("Pas connecté");
+      const newPseudo = pseudoInput.trim().slice(0, 16) || "Chauffeur";
+      const newDriver = driverNameInput.trim().slice(0, 40) || null;
+      const updates: any = {
+        id: user.id,
+        pseudo: newPseudo,
+        driver_name: newDriver,
+        avatar_kind: kind,
+      };
       if (kind !== "photo") updates.avatar_url = null;
-      const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
+      // upsert : marche même si la ligne profiles n'existe pas encore
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(updates, { onConflict: "id" });
       if (error) throw error;
       await refresh();
-      onClose();
+      setSavedMsg("✅ Profil enregistré");
+      setTimeout(() => setSavedMsg(null), 1800);
     } catch (e: any) {
       setErr(e?.message ?? "Erreur");
     } finally {
       setSaving(false);
     }
   };
+
 
   const previewSrc = kind === "photo" ? (localPhoto ?? avatarUrl ?? avatarMan) : (kind === "woman" ? avatarWoman : avatarMan);
 
@@ -143,18 +165,71 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
             <img src={previewSrc} alt="avatar" />
           </div>
           <div className="pc-info">
-            <div className="pc-pseudo">{pseudoInput || pseudo}</div>
+            <div className="pc-pseudo">{driverNameInput || pseudoInput || pseudo}</div>
             <div style={{ color: "#9ca3af", fontSize: 11 }}>ID&nbsp;: {user.id.slice(0, 8).toUpperCase()}</div>
             <div style={{ color: "#9ca3af", fontSize: 11 }}>Depuis&nbsp;: {new Date(user.created_at).toLocaleDateString()}</div>
           </div>
         </div>
 
+        {(() => {
+          const t = tierFor(licenseLevel);
+          const nextXp = t.nextXp;
+          const pct = nextXp ? Math.min(100, Math.round(((licenseXp - t.minXp) / (nextXp - t.minXp)) * 100)) : 100;
+          return (
+            <div style={{
+              background: "linear-gradient(160deg,#0a0c10,#1f2937)",
+              border: "2px solid #f5c542", borderRadius: 12, padding: 12, marginBottom: 12,
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <div style={{ color: "#f5c542", fontWeight: 900, fontSize: 13, letterSpacing: 0.5 }}>
+                  {t.badge} PERMIS — Niv. {t.level} {t.name}
+                </div>
+                <div style={{ color: "#fde047", fontSize: 11, fontWeight: 700 }}>
+                  {nextXp ? `${licenseXp} / ${nextXp} XP` : `${licenseXp} XP (max)`}
+                </div>
+              </div>
+              <div style={{ height: 8, background: "#0a0c10", borderRadius: 4, overflow: "hidden", border: "1px solid #374151" }}>
+                <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg,#f59e0b,#fde047)", transition: "width .3s" }} />
+              </div>
+              <div style={{ marginTop: 6, fontSize: 11, color: "#9ca3af" }}>
+                {t.level >= 4 ? "⭐ Clients STAR débloqués (+100% pourboire)" :
+                 t.level >= 3 ? "🥈 Clients VIP débloqués (+50% pourboire). STAR à Niv. 4." :
+                 t.level >= 2 ? "Encore un peu : clients VIP à Niv. 3 🥈" :
+                                "Termine des courses pour monter de niveau et débloquer les clients VIP / STAR."}
+              </div>
+            </div>
+          );
+        })()}
+
         {err && <div className="pc-err">{err}</div>}
+        {savedMsg && (
+          <div style={{ background: "#065f46", color: "#a7f3d0", padding: "8px 12px", borderRadius: 8, fontSize: 12, marginBottom: 10, fontWeight: 700 }}>
+            {savedMsg}
+          </div>
+        )}
 
         <div className="pc-row">
-          <div className="pc-label">Pseudo</div>
-          <input className="pc-input" maxLength={16} value={pseudoInput} onChange={(e) => setPseudoInput(e.target.value)} />
+          <div className="pc-label">🪪 Nom du chauffeur (carte pro)</div>
+          <input
+            className="pc-input"
+            maxLength={40}
+            placeholder="Ex. Jean Dupont"
+            value={driverNameInput}
+            onChange={(e) => setDriverNameInput(e.target.value)}
+          />
         </div>
+
+        <div className="pc-row">
+          <div className="pc-label">Pseudo (visible en jeu)</div>
+          <input
+            className="pc-input"
+            maxLength={16}
+            placeholder="Ex. TaxiKing"
+            value={pseudoInput}
+            onChange={(e) => setPseudoInput(e.target.value)}
+          />
+        </div>
+
 
         <div className="pc-row">
           <div className="pc-label">Avatar</div>

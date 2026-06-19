@@ -1,6 +1,6 @@
 {
-  "version": "1.5.9",
-  "buildId": "2026-06-19T12:30:00.000Z",
-  "builtAt": 1781872200000,
-  "changelog": "Radio : 3 nouvelles brèves promo pour La Jungle de l'Arcade"
+  "version": "1.6.0",
+  "buildId": "2026-06-19T13:30:00.000Z",
+  "builtAt": 1781876400000,
+  "changelog": "Permis chauffeur (niveaux + XP), clients VIP/STAR, carte profil refondue (nom + pseudo), fix enregistrement pseudo"
 }

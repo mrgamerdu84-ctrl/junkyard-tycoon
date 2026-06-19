@@ -5,6 +5,8 @@ import { shouldStopAhead, nowSeconds, registerAccident, clearAccident, getAccide
 import { getAdmin, useAdminConfig } from "./adminConfig";
 import { recordEarning, isSpecialTaxiUnlocked } from "@/lib/leaderboard";
 import { pushNews } from "@/lib/radioNews";
+import { getLicense, addLicenseXp, rollClientTier, tierFareMult, tierXp } from "@/lib/license";
+
 
 
 // Skins centralisés — pour changer un taxi / la voiture de police,
@@ -94,7 +96,9 @@ type Job = {
   sidePickup: 1 | -1;
   sideDrop: 1 | -1;
   acceptedAt?: number;
+  tier?: "normal" | "vip" | "star";
 };
+
 
 const DEFAULT_DEPOT_POS = 0.78; // fallback si mode "suit le circuit" (legacy)
 const SAVE_KEY = "taxi-tycoon-v4";
@@ -668,16 +672,22 @@ export default function TaxiTycoon() {
     const distNorm = 0.4 + Math.random() * 0.6;
     const adm = getAdmin();
     const revBonus = 1 + 0.10 * (saveRef.current.hqRevenueLvl ?? 0);
-    const fare = Math.round((25 + distNorm * 220) * t.fareMult * adm.clientFareMult * revBonus);
-    const duration = (22 + Math.min(20, fare / 30)) * 1000;
+    // tier client selon permis (VIP / STAR)
+    const license = getLicense();
+    const tier = rollClientTier(license.level);
+    const tMult = tierFareMult(tier);
+    const baseFare = Math.round((25 + distNorm * 220) * t.fareMult * adm.clientFareMult * revBonus * tMult);
+    const duration = (22 + Math.min(20, baseFare / 30)) * 1000;
     return {
-      id, pickupPath, pickup, dropoffPath, dropoff, fare,
+      id, pickupPath, pickup, dropoffPath, dropoff, fare: baseFare,
       deadline: now + duration, duration,
       status: "offered",
       sidePickup: Math.random() < 0.5 ? 1 : -1,
       sideDrop: Math.random() < 0.5 ? 1 : -1,
+      tier,
     };
   };
+
 
   // Mesure des longueurs réelles de chaque path au montage.
   useEffect(() => {
@@ -1015,9 +1025,12 @@ export default function TaxiTycoon() {
               const finalFare = Math.round(j.fare * bonus);
               if (p) {
                 const pt = p.getPointAtLength(j.dropoff);
-                popFloat(`+${fmt(finalFare)}$`, pt.x, pt.y);
+                const tag = j.tier === "star" ? `⭐ +${fmt(finalFare)}$` : j.tier === "vip" ? `🥈 +${fmt(finalFare)}$` : `+${fmt(finalFare)}$`;
+                popFloat(tag, pt.x, pt.y);
               }
               recordEarning(finalFare);
+              // XP permis : 10 normal, 20 VIP, 30 STAR (côté serveur)
+              addLicenseXp(tierXp(j.tier ?? "normal"));
               setSave((s) => ({
                 ...s,
                 money: s.money + finalFare,
@@ -1027,6 +1040,7 @@ export default function TaxiTycoon() {
               }));
               setJobs((js) => js.filter((x) => x.id !== j.id));
             }
+
 
             taxi.jobId = null;
             taxi.ridesSinceDeposit = (taxi.ridesSinceDeposit ?? 0) + 1;
@@ -1889,26 +1903,34 @@ export default function TaxiTycoon() {
         {/* Clients en attente (course offerte ou acceptée) — vue du ciel, sur le trottoir */}
         {jobs.map((j) => {
           const p = getSidewalk(j.pickupPath, j.pickup, j.sidePickup);
-          const haloColor = j.status === "accepted" ? "#3b82f6" : "#10b981";
-          // Sprite vue du ciel (top-down) : épaules + tête vue d'en haut.
-          // Pas de SMIL/animations par client = beaucoup moins de charge.
+          const isStar = j.tier === "star";
+          const isVip = j.tier === "vip";
+          const haloColor = isStar ? "#a855f7" : isVip ? "#fbbf24" : (j.status === "accepted" ? "#3b82f6" : "#10b981");
           return (
             <g key={j.id} transform={`translate(${p.x},${p.y})`}>
-              {/* halo au sol */}
-              <circle r="13" fill={haloColor} opacity="0.22" />
-              <circle r="9" fill={haloColor} opacity="0.35" />
+              {/* halo au sol — plus gros pour VIP/STAR */}
+              <circle r={isStar || isVip ? 16 : 13} fill={haloColor} opacity={isStar || isVip ? 0.35 : 0.22} />
+              <circle r="9" fill={haloColor} opacity="0.45" />
               {/* ombre douce au sol */}
               <ellipse cx="0" cy="0" rx="5.5" ry="5" fill="rgba(0,0,0,0.35)" />
-              {/* épaules / corps vu du dessus (ellipse aplatie aux couleurs du job) */}
+              {/* épaules / corps vu du dessus */}
               <ellipse cx="0" cy="0" rx="5" ry="4" fill={haloColor} stroke="#0f172a" strokeWidth="0.7" />
               {/* tête vue du ciel */}
               <circle cx="0" cy="0" r="2.6" fill="#f1c79b" stroke="#0f172a" strokeWidth="0.5" />
+              {/* badge VIP / STAR au-dessus de l'étiquette */}
+              {(isStar || isVip) && (
+                <g transform="translate(0,-28)">
+                  <rect x="-12" y="-8" width="24" height="11" rx="3" fill={isStar ? "#7c3aed" : "#b45309"} stroke="#fde047" strokeWidth="0.8" />
+                  <text y="0.5" fontSize="7" fontWeight="900" textAnchor="middle" fill="#fde047">{isStar ? "★ STAR" : "VIP"}</text>
+                </g>
+              )}
               {/* étiquette tarif */}
               <g transform="translate(0,-18)">
                 <rect x="-16" y="-8" width="32" height="12" rx="3" fill="#0f172a" stroke={haloColor} strokeWidth="1" />
                 <text y="1" fontSize="8" fontWeight="900" textAnchor="middle" fill={haloColor}>{fmt(j.fare)}$</text>
               </g>
             </g>
+
           );
         })}
 
