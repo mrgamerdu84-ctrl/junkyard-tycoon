@@ -738,7 +738,10 @@ export default function TaxiTycoon() {
   useEffect(() => {
     const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
     pathLensRef.current = lens;
-    if (lens.every((l) => l > 0)) setPathsReady(true);
+    if (lens.every((l) => l > 0)) {
+      setPathsReady(true);
+      regenVipCircuit();
+    }
   }, []);
 
   const pathLen = pathLensRef.current[0] ?? 0;
