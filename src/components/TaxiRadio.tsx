@@ -275,6 +275,8 @@ export default function TaxiRadio() {
 
 
   const playDjLine = (stationName: string) => {
+    // rafraîchit la météo si besoin (cache 30 min)
+    fetchWeather();
     const a = audioRef.current;
     const originalVol = a ? a.volume : 0.5;
     // duck la musique
