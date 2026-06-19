@@ -1,8 +1,11 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AvatarKind } from "@/lib/useAuth";
 import avatarMan from "@/assets/avatar-man.png";
 import avatarWoman from "@/assets/avatar-woman.png";
+import { getAllLiveries } from "@/game/TaxiTycoon";
+
+const TT_SAVE_KEY = "taxi-tycoon-v4";
 
 export const AVATAR_MAN = avatarMan;
 export const AVATAR_WOMAN = avatarWoman;
