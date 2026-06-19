@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "buildId": "2026-06-19T18:00:40.576Z",
-  "builtAt": 1781892040576,
-  "changelog": "Mise à jour automatique active"
+  "version": "1.9.0",
+  "buildId": "2026-06-19T18:30:00.000Z",
+  "builtAt": 1781893800000,
+  "changelog": "Mini dock radio en bas de la carte (prev/play-pause/next)"
 }
