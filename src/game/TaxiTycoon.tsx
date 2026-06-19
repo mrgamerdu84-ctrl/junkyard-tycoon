@@ -94,7 +94,9 @@ type Job = {
   sidePickup: 1 | -1;
   sideDrop: 1 | -1;
   acceptedAt?: number;
+  tier?: "normal" | "vip" | "star";
 };
+
 
 const DEFAULT_DEPOT_POS = 0.78; // fallback si mode "suit le circuit" (legacy)
 const SAVE_KEY = "taxi-tycoon-v4";
