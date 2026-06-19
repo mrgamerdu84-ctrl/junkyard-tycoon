@@ -339,14 +339,17 @@ function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGP
         return (
           <g key={i} ref={el => { nodes.current[i] = el; }}>
             <ellipse cx="0" cy={S * 0.2} rx={S * 0.35} ry={S * 0.18} fill="rgba(0,0,0,0.45)" />
-            <image
-              href={PED_PHOTO_IMAGES[spec.imageIdx]}
-              x={-S / 2}
-              y={-S / 2}
-              width={S}
-              height={S}
-              preserveAspectRatio="xMidYMid meet"
-            />
+            {/* +90° : sprite top-down "tête au nord", parent applique rotate(angle) basé sur +x */}
+            <g transform="rotate(90)">
+              <image
+                href={PED_PHOTO_IMAGES[spec.imageIdx]}
+                x={-S / 2}
+                y={-S / 2}
+                width={S}
+                height={S}
+                preserveAspectRatio="xMidYMid meet"
+              />
+            </g>
           </g>
         );
       })}
