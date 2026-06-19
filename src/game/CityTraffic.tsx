@@ -217,8 +217,8 @@ function Vehicle({
 }) {
   // Tous les uploads admin sont sauvegardés en vue du ciel, avant vers ↑.
   // Le parent tourne sur l'angle de la route (+x), donc +90° = roule droit.
-  const W = VEHICLE_SIZE;
-  const H = VEHICLE_SIZE;
+  const W = 36; // VEHICLE_SIZE — aligné sur la taille du taxi joueur
+  const H = 36;
   const href = CHARGER_IMAGES[photoIdx % CHARGER_IMAGES.length];
   return (
     <g>
