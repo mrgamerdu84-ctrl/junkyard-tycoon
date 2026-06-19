@@ -712,25 +712,51 @@ export default function TaxiTycoon() {
     forceRender((n) => n + 1);
   }, [pathsReady, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, admin.hqX, admin.hqY]);
 
-  // Sync rival AI taxis fleet — IA décide combien de taxis rouges déployer
-  // en fonction de la flotte du joueur (pas de joueurs multi pour l'instant).
+  // Sync rival AI taxis fleet — l'IA décide elle-même combien de taxis déployer
+  // (aléatoire entre 1 et flotte joueur + 2, rerollé toutes les 35-70s) + balance des taunts.
   useEffect(() => {
     if (!pathsReady) return;
-    // IA : ~60% de la flotte joueur, min 1, max 6 ; 0 si rival désactivé.
-    const playerFleet = save.taxis.length;
-    const aiCount = Math.max(1, Math.min(6, Math.ceil(playerFleet * 0.6)));
-    const target = admin.rivalEnabled ? aiCount : 0;
-    while (rivalTaxisRef.current.length < target) {
-      const pos = closestOnPath(0, admin.rivalHQX, admin.rivalHQY);
-      const spawnedRival: RivalTaxi = {
-        id: 10000 + rivalTaxisRef.current.length,
-        pathIdx: 0, pos, target: pos, mode: "idle", jobId: null,
-      };
-      syncVehicleLane(spawnedRival);
-      rivalTaxisRef.current.push(spawnedRival);
+    if (!admin.rivalEnabled) {
+      rivalTaxisRef.current.length = 0;
+      forceRender((n) => n + 1);
+      return;
     }
-    while (rivalTaxisRef.current.length > target) rivalTaxisRef.current.pop();
-    forceRender((n) => n + 1);
+    const TAUNTS = [
+      "Trop lent, bleu !",
+      "T'as vu ma flotte ?",
+      "Rival Cabs domine la ville 😎",
+      "Tes clients préfèrent le rouge 🚕",
+      "Encore une course volée !",
+      "Range ton taxi, c'est l'heure de la sieste 💤",
+      "On se revoit au classement… loin devant toi.",
+      "Hé chauffeur, t'as pris du retard !",
+    ];
+    const rebuildFleet = () => {
+      const playerFleet = Math.max(1, save.taxis.length);
+      const target = Math.max(1, Math.min(7, 1 + Math.floor(Math.random() * (playerFleet + 2))));
+      while (rivalTaxisRef.current.length < target) {
+        const pos = closestOnPath(0, admin.rivalHQX, admin.rivalHQY);
+        const spawnedRival: RivalTaxi = {
+          id: 10000 + rivalTaxisRef.current.length,
+          pathIdx: 0, pos, target: pos, mode: "idle", jobId: null,
+        };
+        syncVehicleLane(spawnedRival);
+        rivalTaxisRef.current.push(spawnedRival);
+      }
+      while (rivalTaxisRef.current.length > target) rivalTaxisRef.current.pop();
+      forceRender((n) => n + 1);
+    };
+    rebuildFleet();
+    const fleetTimer = window.setInterval(rebuildFleet, 35000 + Math.random() * 35000);
+    const tauntTimer = window.setInterval(() => {
+      const msg = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
+      setRivalTaunt(msg);
+      window.setTimeout(() => setRivalTaunt(null), 5500);
+    }, 22000 + Math.random() * 20000);
+    return () => {
+      window.clearInterval(fleetTimer);
+      window.clearInterval(tauntTimer);
+    };
   }, [pathsReady, admin.rivalEnabled, save.taxis.length, admin.rivalHQX, admin.rivalHQY]);
 
   // Sync police fleet (nombre paramétrable depuis le panel admin)
