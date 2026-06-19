@@ -164,18 +164,19 @@ export default function TaxiRadio() {
 
     if (st.tts) {
       a.pause();
-      speak({ fr: "Radio Infos, votre ville en direct.", en: "Taxi News Radio, your city live." });
-      // première brève rapidement
+      speak(WELCOME_JINGLE);
+      // première brève rapidement (météo / événement / trafic)
       window.setTimeout(() => {
         const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
         speak(AMBIENT_NEWS[idx]);
-      }, 4500);
+      }, 6000);
+      // puis enchaîne toutes les ~18s
       ambientTimerRef.current = window.setInterval(() => {
         const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
         speak(AMBIENT_NEWS[idx]);
-      }, 25000);
+      }, 18000);
       return;
     }
 
