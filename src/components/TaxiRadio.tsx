@@ -450,33 +450,46 @@ export default function TaxiRadio() {
         return;
       }
 
-      if (a.src !== st.url) a.src = st.url;
-      a.loop = !!st.loop;
+      // === Nouvelle séquence radio synchronisée ===
+      // 1) Stop musique précédente. 2) DJ annonce. 3) onended → musique démarre.
+      // On désactive le loop natif pour ré-enclencher la séquence à chaque "nouvelle chanson".
+      radioSessionRef.current++;
+      const session = radioSessionRef.current;
+      a.pause();
+      a.loop = false; // on gère la boucle manuellement pour réinsérer le DJ entre chaque passe
+      if (st.url && a.src !== st.url) a.src = st.url;
       a.volume = st.volume ?? 0.5;
-      a.play().catch(() => {
-        const start = () => {
-          a.play().catch(() => {});
-          window.removeEventListener("pointerdown", start);
-          window.removeEventListener("keydown", start);
-          window.removeEventListener("touchstart", start);
-        };
-        window.addEventListener("pointerdown", start, { once: true });
-        window.addEventListener("keydown", start, { once: true });
-        window.addEventListener("touchstart", start, { once: true });
-      });
 
-      // Animateur radio : annonce tout de suite la station, puis revient régulièrement
-      const scheduleDj = () => {
-        const delay = DJ_REPEAT_MIN_MS + Math.random() * DJ_REPEAT_SPREAD_MS;
-        djTimerRef.current = window.setTimeout(() => {
-          if (!pausedRef.current) playDjLine(st.name);
-          scheduleDj();
-        }, delay) as unknown as number;
+      const startSong = () => {
+        // Abandonne si l'utilisateur a changé de station / mis en pause entre temps
+        if (session !== radioSessionRef.current) return;
+        if (pausedRef.current) return;
+        a.play().catch(() => {
+          const start = () => {
+            if (session !== radioSessionRef.current) return;
+            a.play().catch(() => {});
+            window.removeEventListener("pointerdown", start);
+            window.removeEventListener("keydown", start);
+            window.removeEventListener("touchstart", start);
+          };
+          window.addEventListener("pointerdown", start, { once: true });
+          window.addEventListener("keydown", start, { once: true });
+          window.addEventListener("touchstart", start, { once: true });
+        });
       };
-      djTimerRef.current = window.setTimeout(() => {
-        if (!pausedRef.current) playDjLine(st.name);
-        scheduleDj();
-      }, DJ_FIRST_DELAY_MS) as unknown as number;
+
+      // Annonce l'animateur, PUIS démarre la chanson quand sa voix se termine.
+      const runDjThenSong = () => {
+        if (session !== radioSessionRef.current) return;
+        if (pausedRef.current) { startSong(); return; }
+        speak(djLine(st.name), () => {
+          if (session !== radioSessionRef.current) return;
+          startSong();
+        });
+      };
+
+      // Petit délai pour que la transition soit nette (changement de station perceptible)
+      djTimerRef.current = window.setTimeout(runDjThenSong, DJ_FIRST_DELAY_MS) as unknown as number;
     }
   }, [stationId, ready, newsHour]);
 
