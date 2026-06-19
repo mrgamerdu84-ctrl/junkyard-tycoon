@@ -319,6 +319,7 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
 
       {showTutorial && <TutorialDialog onClose={() => setShowTutorial(false)} />}
       {showLeaderboard && <LeaderboardPanel onClose={() => setShowLeaderboard(false)} />}
+      {showProfile && <ProfileCard onClose={() => setShowProfile(false)} />}
 
       {showPseudo && (
         <div className="hs-pseudo-overlay">
