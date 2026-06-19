@@ -76,6 +76,14 @@ export default function TaxiRadio() {
     return () => window.clearInterval(t);
   }, []);
 
+  // Fetch météo initial + rafraîchissement toutes les 30 min
+  useEffect(() => {
+    fetchWeather();
+    const t = window.setInterval(() => fetchWeather(), 30 * 60 * 1000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => { langRef.current = lang; }, [lang]);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
