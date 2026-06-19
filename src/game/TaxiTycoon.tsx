@@ -2191,12 +2191,33 @@ export default function TaxiTycoon() {
             <span className="tt-stat-icon">🚕</span>
             <span className="tt-stat-val">{taxiCount}/{effectiveMaxTaxis} taxis</span>
           </div>
-          {admin.rivalEnabled && (
-            <div className="tt-stat" style={{ color: "#ff6b7a" }} title="Courses volées par Rival Cabs">
-              <span className="tt-stat-icon">⚔️</span>
-              <span className="tt-stat-val">{rivalStolen}</span>
-            </div>
-          )}
+          {admin.rivalEnabled && (() => {
+            const me = save.totalEarned;
+            const them = rivalEarnings;
+            const total = Math.max(1, me + them);
+            const mePct = Math.round((me / total) * 100);
+            const lead = me - them;
+            return (
+              <div
+                className="tt-stat"
+                style={{ color: lead >= 0 ? "#34d399" : "#ff6b7a", flexDirection: "column", alignItems: "stretch", gap: 2, minWidth: 130 }}
+                title={`Toi : ${fmt(me)}$ • Rival : ${fmt(them)}$ • Volées : ${rivalStolen}`}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                  <span>⚔️ DUEL</span>
+                  <span>{lead >= 0 ? `+${fmt(lead)}$` : `${fmt(lead)}$`}</span>
+                </div>
+                <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden", background: "#1f2127" }}>
+                  <div style={{ width: `${mePct}%`, background: "#34d399" }} />
+                  <div style={{ flex: 1, background: "#ff6b7a" }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#9ca3af" }}>
+                  <span>Toi {fmt(me)}$</span>
+                  <span>Rival {fmt(them)}$ · {rivalStolen} vol.</span>
+                </div>
+              </div>
+            );
+          })()}
           {(() => {
             const city = getCityLevel(save.cityFund);
             const nextT = city.next?.threshold ?? city.threshold;
