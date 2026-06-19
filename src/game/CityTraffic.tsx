@@ -493,29 +493,52 @@ export default function CityTraffic() {
     initTrafficLights(pathRefs.current, lens);
     setLights(getTrafficLights());
 
+    // Paths autorisés pour le trafic civil : tout sauf village.
+    const civilAllowed: number[] = [];
+    for (let i = 0; i < pathRefs.current.length; i++) {
+      if (!VILLAGE_PATHS.has(i)) civilAllowed.push(i);
+    }
+    const pickPath = () => civilAllowed[Math.floor(Math.random() * civilAllowed.length)];
+    // Rerolle path + sens + durée à chaque tour pour casser la régularité.
+    const rerollSpec = (spec: CarSpec): CarSpec => {
+      const newPath = pickPath();
+      // ±30 % de variation de durée
+      const baseDur = Math.max(14, spec.duration);
+      const dur = baseDur * (0.7 + Math.random() * 0.6);
+      return {
+        ...spec,
+        pathIdx: newPath,
+        flip: Math.random() < 0.5,
+        duration: dur,
+      };
+    };
 
-    const states: CarState[] = activeCars.map((spec, i) => {
+    const states: CarState[] = activeCars.map((rawSpec, i) => {
+      // Init aléatoire : chaque voiture civile prend un path/dir/durée tirés au sort
+      const spec = rerollSpec(rawSpec);
       const pathLen = lens[spec.pathIdx];
       const baseSpeed = pathLen / spec.duration; // px/s
-      // delay négatif => avance dans l'animation : s = -delay * baseSpeed
-      const startS = ((-spec.delay) * baseSpeed) % pathLen;
       return {
         spec,
         pathLen,
         baseSpeed,
-        s: (startS + pathLen) % pathLen,
+        s: Math.random() * pathLen,
         speed: baseSpeed,
         laneKey: `${spec.pathIdx}:${spec.flip ? "r" : "f"}`,
         node: carNodes.current[i],
       };
     });
 
-    // Index par lane pour la recherche du véhicule devant.
-    const lanes = new Map<string, CarState[]>();
-    for (const st of states) {
-      if (!lanes.has(st.laneKey)) lanes.set(st.laneKey, []);
-      lanes.get(st.laneKey)!.push(st);
-    }
+    // Index par lane pour la recherche du véhicule devant (recalculé après chaque reroll).
+    const rebuildLanes = (): Map<string, CarState[]> => {
+      const m = new Map<string, CarState[]>();
+      for (const st of states) {
+        if (!m.has(st.laneKey)) m.set(st.laneKey, []);
+        m.get(st.laneKey)!.push(st);
+      }
+      return m;
+    };
+    let lanes = rebuildLanes();
 
     let last = performance.now();
     let raf = 0;
@@ -564,8 +587,27 @@ export default function CityTraffic() {
       }
 
       // 2) avancer et appliquer le transform
+      let needsRebuild = false;
       for (const st of states) {
-        st.s = (st.s + st.speed * dt) % st.pathLen;
+        const prev = st.s;
+        st.s += st.speed * dt;
+        // À la fin du tour : reroll path + sens + durée pour casser les routines
+        if (st.s >= st.pathLen) {
+          const newSpec = rerollSpec(st.spec);
+          st.spec = newSpec;
+          st.pathLen = lens[newSpec.pathIdx];
+          st.baseSpeed = st.pathLen / newSpec.duration;
+          st.s = 0;
+          st.speed = st.baseSpeed;
+          const newKey = `${newSpec.pathIdx}:${newSpec.flip ? "r" : "f"}`;
+          if (newKey !== st.laneKey) {
+            st.laneKey = newKey;
+            needsRebuild = true;
+          }
+        } else if (prev > st.s) {
+          // safety
+          st.s = st.s % st.pathLen;
+        }
         const node = st.node;
         if (!node) continue;
         const path = pathRefs.current[st.spec.pathIdx];
@@ -577,12 +619,14 @@ export default function CityTraffic() {
         const ang = (Math.atan2(p2.y - p.y, p2.x - p.x) * 180) / Math.PI;
         node.setAttribute("transform", `translate(${p.x.toFixed(2)},${p.y.toFixed(2)}) rotate(${ang.toFixed(2)})`);
       }
+      if (needsRebuild) lanes = rebuildLanes();
 
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [activeCars.length]);
+
 
   return (
     <svg
