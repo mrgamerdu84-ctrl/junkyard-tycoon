@@ -1903,26 +1903,34 @@ export default function TaxiTycoon() {
         {/* Clients en attente (course offerte ou acceptée) — vue du ciel, sur le trottoir */}
         {jobs.map((j) => {
           const p = getSidewalk(j.pickupPath, j.pickup, j.sidePickup);
-          const haloColor = j.status === "accepted" ? "#3b82f6" : "#10b981";
-          // Sprite vue du ciel (top-down) : épaules + tête vue d'en haut.
-          // Pas de SMIL/animations par client = beaucoup moins de charge.
+          const isStar = j.tier === "star";
+          const isVip = j.tier === "vip";
+          const haloColor = isStar ? "#a855f7" : isVip ? "#fbbf24" : (j.status === "accepted" ? "#3b82f6" : "#10b981");
           return (
             <g key={j.id} transform={`translate(${p.x},${p.y})`}>
-              {/* halo au sol */}
-              <circle r="13" fill={haloColor} opacity="0.22" />
-              <circle r="9" fill={haloColor} opacity="0.35" />
+              {/* halo au sol — plus gros pour VIP/STAR */}
+              <circle r={isStar || isVip ? 16 : 13} fill={haloColor} opacity={isStar || isVip ? 0.35 : 0.22} />
+              <circle r="9" fill={haloColor} opacity="0.45" />
               {/* ombre douce au sol */}
               <ellipse cx="0" cy="0" rx="5.5" ry="5" fill="rgba(0,0,0,0.35)" />
-              {/* épaules / corps vu du dessus (ellipse aplatie aux couleurs du job) */}
+              {/* épaules / corps vu du dessus */}
               <ellipse cx="0" cy="0" rx="5" ry="4" fill={haloColor} stroke="#0f172a" strokeWidth="0.7" />
               {/* tête vue du ciel */}
               <circle cx="0" cy="0" r="2.6" fill="#f1c79b" stroke="#0f172a" strokeWidth="0.5" />
+              {/* badge VIP / STAR au-dessus de l'étiquette */}
+              {(isStar || isVip) && (
+                <g transform="translate(0,-28)">
+                  <rect x="-12" y="-8" width="24" height="11" rx="3" fill={isStar ? "#7c3aed" : "#b45309"} stroke="#fde047" strokeWidth="0.8" />
+                  <text y="0.5" fontSize="7" fontWeight="900" textAnchor="middle" fill="#fde047">{isStar ? "★ STAR" : "VIP"}</text>
+                </g>
+              )}
               {/* étiquette tarif */}
               <g transform="translate(0,-18)">
                 <rect x="-16" y="-8" width="32" height="12" rx="3" fill="#0f172a" stroke={haloColor} strokeWidth="1" />
                 <text y="1" fontSize="8" fontWeight="900" textAnchor="middle" fill={haloColor}>{fmt(j.fare)}$</text>
               </g>
             </g>
+
           );
         })}
 
