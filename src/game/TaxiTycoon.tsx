@@ -2403,7 +2403,7 @@ export default function TaxiTycoon() {
               </div>
               <p className="tt-modal-sub">Choisis le modèle de ta flotte :</p>
               <div className="tt-livery-grid">
-                {LIVERIES.map((l) => (
+                {allLiveries.map((l) => (
                   <button
                     key={l.id}
                     className={`tt-livery-card ${save.liveryId === l.id ? "selected" : ""}`}
