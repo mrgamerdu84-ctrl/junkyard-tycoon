@@ -1405,6 +1405,10 @@ export default function TaxiTycoon() {
               accidentsRef.current.push(acc);
               registerAccident({ id, pathIdx: pIdx, s: sPos, x: pt.x, y: pt.y, kind });
               showToast(kind === "vehicle" ? "💥 Accident signalé ! Secours en route…" : "🚑 Piéton renversé ! Ambulance en route…");
+              pushNews(kind === "vehicle"
+                ? { fr: "Flash info : accident de la circulation signalé en ville, les secours sont en route.", en: "News flash: a traffic accident has been reported downtown, emergency services are on the way." }
+                : { fr: "Flash info : un piéton vient d'être renversé, l'ambulance est en chemin.", en: "News flash: a pedestrian has just been hit, an ambulance is on its way." }
+              );
             }
           }
           nextAccidentAtRef.current = tMs + 40000 + Math.random() * 40000;
