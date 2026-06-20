@@ -406,7 +406,7 @@ export default function TaxiRadio() {
       window.setTimeout(() => {
         const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
-        speak(AMBIENT_NEWS[idx]);
+        speak(pickNextBreve());
       }, 6000);
       // puis enchaîne toutes les ~18s, avec un intermède musical tous les 3 brèves
       ambientTimerRef.current = window.setInterval(() => {
@@ -417,7 +417,7 @@ export default function TaxiRadio() {
         }
         const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
-        speak(AMBIENT_NEWS[idx]);
+        speak(pickNextBreve());
       }, 18000);
       return;
     }
@@ -432,7 +432,7 @@ export default function TaxiRadio() {
         window.setTimeout(() => {
           const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
           ambientIdxRef.current++;
-          speak(AMBIENT_NEWS[idx]);
+          speak(pickNextBreve());
         }, 4000);
         ambientTimerRef.current = window.setInterval(() => {
           cycle++;
@@ -442,7 +442,7 @@ export default function TaxiRadio() {
           }
           const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
           ambientIdxRef.current++;
-          speak(AMBIENT_NEWS[idx]);
+          speak(pickNextBreve());
         }, 18000);
         return;
       }
