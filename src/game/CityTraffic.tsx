@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAdminConfig } from "./adminConfig";
-import { CIVIL_CAR_URLS, PEDESTRIAN_PHOTO_URLS } from "./gameAssets";
+import { PEDESTRIAN_PHOTO_URLS } from "./gameAssets";
+import { VehicleSvg, RadarSvg, type VehicleSvgKind } from "./vehicles/VehicleSvgs";
 import {
   initTrafficLights,
   getTrafficLights,
@@ -10,15 +11,19 @@ import {
   type TrafficLight,
 } from "./trafficLights";
 
-// Skins centralisés — pour remplacer un véhicule civil, édite
-// `src/game/gameAssets.ts` (clés "civil.car.*"). Aucun import direct ici.
-const CHARGER_IMAGES = CIVIL_CAR_URLS;
 const PED_PHOTO_IMAGES = PEDESTRIAN_PHOTO_URLS;
 
 // Paths "village" (haut de la map) : aucune voiture/piéton civil
 // ni course taxi ne doit s'y générer. On garde l'index pour ne pas casser
 // les autres références numériques.
 export const VILLAGE_PATHS = new Set<number>([1]);
+
+// === SÉPARATION DES VOIES (code de la route) ===
+// Demi-largeur d'une route ≈ 23 px. On place chaque véhicule à LANE_HALF px
+// du centre, à DROITE de son sens de marche. Les véhicules en sens inverse
+// se retrouvent donc de l'autre côté du centre → voies séparées strictes,
+// plus aucun contre-sens visuel.
+const LANE_HALF = 11;
 
 /* eslint-disable prettier/prettier */
 
