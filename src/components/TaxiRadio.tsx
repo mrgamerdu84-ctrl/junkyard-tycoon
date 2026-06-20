@@ -84,4 +84,156 @@ export default function TaxiRadio() {
   useEffect(() => {
     const st = STATIONS.find((s) => s.id === stationId);
     if (ambientTimerRef.current) window.clearInterval(ambientTimerRef.current);
-    if (inter
+    if (interludeRef.current) interludeRef.current.pause();
+    setTicker("");
+
+    if (!st || st.id === "off") { if (audioRef.current) audioRef.current.pause(); return; }
+
+    if (st.tts || newsHour) {
+      if (audioRef.current) audioRef.current.pause();
+      speak(WELCOME_JINGLE);
+      ambientTimerRef.current = window.setInterval(() => {
+        const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
+        ambientIdxRef.current++;
+        speak(AMBIENT_NEWS[idx]);
+      }, 16000);
+    } else if (st.url && audioRef.current) {
+      audioRef.current.src = st.url;
+      audioRef.current.volume = st.volume || 0.5;
+      if (!paused) audioRef.current.play().catch(() => {});
+    }
+  }, [stationId, newsHour, paused]);
+
+  // =========================================================
+  // LOGIQUE DU TRAFIC INTELLIGENT (DROITE / GAUCHE RESPECTÉ)
+  // =========================================================
+  useEffect(() => {
+    const intervalTrafic = setInterval(() => {
+      if (voitures.length < 5) {
+        const vaADroite = Math.random() > 0.5;
+        setVoitures((prev) => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            voie: vaADroite ? "droite" : "gauche",
+            indexEtape: 0,
+            x: vaADroite ? VOIE_DROITE[0].x : VOIE_GAUCHE[0].x,
+            y: vaADroite ? VOIE_DROITE[0].y : VOIE_GAUCHE[0].y,
+            vitesse: 1.2
+          }
+        ]);
+      }
+    }, 3500);
+    return () => clearInterval(intervalTrafic);
+  }, [voitures]);
+
+  useEffect(() => {
+    const boucleMouvement = setInterval(() => {
+      setVoitures((prevVoitures) =>
+        prevVoitures
+          .map((voiture) => {
+            const pointsCibles = voiture.voie === "droite" ? VOIE_DROITE : VOIE_GAUCHE;
+            const cibleActuelle = pointsCibles[voiture.indexEtape];
+            if (!cibleActuelle) return null;
+
+            const diffX = cibleActuelle.x - voiture.x;
+            const diffY = cibleActuelle.y - voiture.y;
+            const distance = Math.sqrt(diffX * diffX + diffY * diffY);
+
+            if (distance < 2) {
+              return { ...voiture, indexEtape: voiture.indexEtape + 1 };
+            }
+            return {
+              ...voiture,
+              x: voiture.x + (diffX / distance) * voiture.vitesse,
+              y: voiture.y + (diffY / distance) * voiture.vitesse
+            };
+          })
+          .filter((v): v is Voiture => v !== null)
+      );
+    }, 50);
+    return () => clearInterval(boucleMouvement);
+  }, []);
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50">
+      <audio ref={audioRef} loop />
+      
+      {/* BOUTON FLOTTANT DE LA RADIO */}
+      <button 
+        onClick={() => setOpen(!open)} 
+        className="w-14 h-14 bg-yellow-500 rounded-full shadow-lg flex items-center justify-center text-2xl hover:scale-105 transition-transform border-2 border-slate-900"
+      >
+        {STATIONS.find(s => s.id === stationId)?.emoji || "📻"}
+      </button>
+
+      {/* BOÎTE DE DIALOGUE PRINCIPALE */}
+      {open && (
+        <div className="absolute bottom-16 right-0 w-72 bg-slate-900 border border-slate-700 text-white rounded-xl shadow-2xl p-4 flex flex-col gap-3 max-h-[80vh] overflow-y-auto">
+          
+          {/* SECTION CONTROLE DE LA MUSIQUE */}
+          <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+            <span className="font-bold text-yellow-500 text-sm">Taxi Autoradio</span>
+            <button 
+              onClick={() => setPaused(!paused)} 
+              className="text-xs bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded transition-colors"
+            >
+              {paused ? "▶️ Play" : "⏸️ Pause"}
+            </button>
+          </div>
+
+          {/* TICKER INFOS */}
+          {ticker && (
+            <div className="bg-slate-950 p-2 rounded text-xs text-yellow-400 font-mono border border-yellow-600/30 animate-pulse">
+              📢 {ticker}
+            </div>
+          )}
+
+          {/* LISTE DES STATIONS RADIO */}
+          <div className="grid grid-cols-1 gap-1 max-h-36 overflow-y-auto pr-1">
+            {STATIONS.map((st) => (
+              <button
+                key={st.id}
+                onClick={() => setStationId(st.id)}
+                className={`flex items-center gap-2 w-full text-left text-xs p-1.5 rounded transition-colors ${
+                  stationId === st.id ? "bg-yellow-500 text-slate-950 font-bold" : "bg-slate-950/60 hover:bg-slate-800 text-slate-200"
+                }`}
+              >
+                <span>{st.emoji}</span>
+                <span className="truncate">{st.name}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* CONTRÔLE DE TRAFIC INJECTÉ */}
+          <div className="border-t border-slate-700 pt-3 mt-1">
+            <h4 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest text-center flex items-center justify-center gap-1">
+              🚦 REGULATION FLUIDE DU TRAFIC
+            </h4>
+            <div className="mt-2 bg-slate-950 p-2 rounded border border-slate-800 text-[10px] font-mono">
+              <div className="flex justify-between text-slate-300">
+                <span>Réseau Auto :</span>
+                <span className="text-emerald-400 font-bold">FLUIDE 🟢</span>
+              </div>
+              <div className="flex justify-between text-slate-300 mt-0.5">
+                <span>Voitures :</span>
+                <span className="text-yellow-400 font-bold">{voitures.length} / 5</span>
+              </div>
+              
+              <div className="mt-1.5 max-h-20 overflow-y-auto text-[9px] text-slate-500 flex flex-col gap-0.5 border-t border-slate-900 pt-1">
+                {voitures.map((v) => (
+                  <div key={v.id} className="flex justify-between">
+                    <span>🚗 Voie {v.voie === "droite" ? "Droite (→)" : "Gauche (←)"}</span>
+                    <span>X:{Math.round(v.x)} Y:{Math.round(v.y)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
+    </div>
+  );
+          }
+        
