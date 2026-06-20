@@ -48,4 +48,29 @@ export default function TaxiRadio() {
   const [newsHour,setNewsHour]=useState(false);
   const [voitures,setVoitures]=useState<Voiture[]>([]);
 
-  const ambientRef=useRef<number|null
+  const ambientRef=useRef<number|null>(null);
+  const djRef=useRef<number|null>(null);
+  const ttsRef=useRef<HTMLAudioElement|null>(null);
+  const sessionRef=useRef(0);
+  const idxRef=useRef(0);
+
+  useEffect(()=>{ langRef.current=lang; },[lang]);
+
+  useEffect(()=>{
+    setStationId(readPref());
+    const l=readLang(); setLang(l); langRef.current=l; setReady(true);
+    if(typeof window!=="undefined" && "speechSynthesis" in window){ try{window.speechSynthesis.getVoices();}catch{} }
+  },[]);
+
+  useEffect(()=>{ const tick=()=>setNewsHour(new Date().getMinutes()<10); tick(); const id=setInterval(tick,30000); return()=>clearInterval(id); },[]);
+
+  const showTicker=(t:string)=>{ setTicker(t); setTimeout(()=>setTicker(""),8000); };
+
+  const speak=async(news:RadioNews,done?:()=>void)=>{
+    const l=langRef.current; const text=l==="en"?news.en:news.fr; showTicker(text);
+    const finish=()=>done?.();
+    const speakBrowser=()=>{
+      if(typeof window==="undefined"||!("speechSynthesis" in window)){finish();return;}
+      const s=window.speechSynthesis; try{s.cancel();}catch{}
+      const u=new SpeechSynthesisUtterance(text); u.lang=l==="en"?"en-US":"fr-FR"; const v=pickVoice(l); if(v)u.voice=v;
+      u.onend
