@@ -482,7 +482,24 @@ export default function TaxiTycoon() {
   // === Persistent state ===
   const [save, setSave] = useState<SaveData>(DEFAULT_SAVE);
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => { setSave(loadSave()); setHydrated(true); }, []);
+  useEffect(() => {
+    // 1) hydratation immédiate depuis localStorage pour zéro flash
+    const local = loadSave();
+    setSave(local);
+    setHydrated(true);
+    // 2) tentative de surcharge depuis le cloud si l'utilisateur est connecté
+    (async () => {
+      try {
+        const { fetchCloudSave } = await import("@/lib/cloudSave");
+        const cloud = await fetchCloudSave();
+        if (cloud && cloud.data && typeof cloud.data === "object") {
+          setSave({ ...DEFAULT_SAVE, ...(cloud.data as Partial<SaveData>) });
+        }
+      } catch (e) {
+        console.warn("[TaxiTycoon] cloud load skipped", e);
+      }
+    })();
+  }, []);
   const saveRef = useRef(save);
   saveRef.current = save;
 
@@ -948,12 +965,18 @@ export default function TaxiTycoon() {
 
 
 
-  // Save persistence (debounced)
+  // Save persistence (debounced) — local d'abord, puis push cloud si connecté.
   useEffect(() => {
     if (!hydrated) return;
     const id = setTimeout(() => {
       try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch {}
-    }, 400);
+      (async () => {
+        try {
+          const { pushCloudSave } = await import("@/lib/cloudSave");
+          await pushCloudSave(save);
+        } catch {}
+      })();
+    }, 800);
     return () => clearTimeout(id);
   }, [save, hydrated]);
 
