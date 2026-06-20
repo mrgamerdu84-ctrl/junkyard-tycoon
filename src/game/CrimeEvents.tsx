@@ -19,7 +19,20 @@ type CrimeEvent = {
   ttl: number;        // ms restant avant disparition
   label: string;
   dispatched?: boolean;
+  aiClaimAt: number;  // performance.now ms — au-delà, l'AI prend la mission
+  stolenByAI?: boolean;
 };
+
+// Lit le niveau de QG du joueur depuis la sauvegarde locale.
+// Plus le niveau monte, plus l'AI réagit vite aux missions.
+function readDepotTier(): number {
+  try {
+    const raw = window.localStorage.getItem("taxi-tycoon-v4");
+    if (!raw) return 0;
+    const s = JSON.parse(raw);
+    return typeof s?.depotTier === "number" ? s.depotTier : 0;
+  } catch { return 0; }
+}
 
 const KIND_META: Record<CrimeKind, { icon: string; color: string; label: string; category: CustomVehicleCategory }> = {
   robbery:  { icon: "🚨", color: "#ef4444", label: "Braquage",       category: "police" },
