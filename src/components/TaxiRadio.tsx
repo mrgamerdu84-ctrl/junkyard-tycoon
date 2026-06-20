@@ -249,6 +249,16 @@ export default function TaxiRadio() {
     tickerTimerRef.current = window.setTimeout(() => setTicker(""), 9000);
   };
 
+  // Pioche la prochaine brève en mêlant brèves d'ambiance, horoscope (1x/5)
+  // et programme TV (1x/7), pour varier davantage la radio infos.
+  const pickNextBreve = (): RadioNews => {
+    const i = ambientIdxRef.current;
+    if (i > 0 && i % 5 === 0) return getHoroscopeNews();
+    if (i > 0 && i % 7 === 0) return getTvProgramNews();
+    return AMBIENT_NEWS[i % AMBIENT_NEWS.length];
+  };
+
+
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   // Jeton de session radio : incrémenté à chaque changement de station / pause.
   // Toute séquence DJ→musique en cours vérifie ce jeton avant de continuer,
