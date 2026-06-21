@@ -81,6 +81,7 @@ export const DEFAULT_ADMIN: AdminConfig = {
   rivalSpeedMult: 1,
 
   policeCarCount: 2,
+  aiDifficulty: "normal",
 
   circuitPoints: [],
   circuitTaxiCount: 0,
