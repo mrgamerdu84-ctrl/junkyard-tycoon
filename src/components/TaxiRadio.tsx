@@ -1,4 +1,10 @@
-content: string;
+import { useEffect, useRef, useState } from 'react';
+import { GAME_ASSETS } from '@/game/gameAssets';
+
+export type RadioNews = {
+  id: string;
+  title: string;
+  content: string;
   date?: string;
 };
 
