@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAdminConfig } from "./adminConfig";
-import { PEDESTRIAN_PHOTO_URLS, listCustomVehicles, type CustomVehicleCategory } from "./gameAssets";
+import { PEDESTRIAN_PHOTO_URLS, listCustomVehicles, getCivilCarUrls, type CustomVehicleCategory } from "./gameAssets";
 import { VehicleSvg, type VehicleSvgKind } from "./vehicles/VehicleSvgs";
 import {
   initTrafficLights,
@@ -333,34 +333,47 @@ const TRAFFIC_CATEGORIES: CustomVehicleCategory[] = [
   "civil", "police", "ambulance", "firetruck", "service",
 ];
 
-function buildCarsFromCustom(): CarSpec[] {
+function buildCarsFromCustom(count?: number): CarSpec[] {
   const customs = listCustomVehicles().filter(v => TRAFFIC_CATEGORIES.includes(v.category));
-  if (customs.length === 0) return [];
   // Paths autorisés : tout sauf "village".
   const allowedPaths: number[] = [];
-  // ROADS.length connu : 0..N-1 ; filtre les pathIdx village.
   for (let i = 0; i < ROADS.length; i++) if (!VILLAGE_PATHS.has(i)) allowedPaths.push(i);
-  return customs.map((v, i): CarSpec => {
+
+  // Pool d'URLs disponibles : assets civils par défaut + customs roulants.
+  // Permet d'avoir du trafic même sans uploads, et boucle modulo si N > pool.length.
+  const civilUrls = getCivilCarUrls();
+  type Entry = { url: string; category: CustomVehicleCategory };
+  const pool: Entry[] = [
+    ...civilUrls.map((url): Entry => ({ url, category: "civil" })),
+    ...customs.map((v): Entry => ({ url: v.url, category: v.category })),
+  ];
+  if (pool.length === 0) return [];
+
+  const N = Math.max(0, count ?? pool.length);
+  const out: CarSpec[] = [];
+  for (let i = 0; i < N; i++) {
+    const entry = pool[i % pool.length];
     const pathIdx = allowedPaths[i % allowedPaths.length];
-    const flip = (i % 2) === 1; // alterne les sens → voies des deux côtés
-    // Durée plus longue pour les gros gabarits
-    const isHeavy = v.category === "firetruck" || v.category === "service" || v.category === "ambulance";
-    const baseDur = isHeavy ? 96 : 78;
-    const duration = baseDur + (i % 5) * 2;
-    return {
+    const flip = (i % 2) === 1;
+    const isHeavy = entry.category === "firetruck" || entry.category === "service" || entry.category === "ambulance";
+    const baseDur = isHeavy ? 18 : 14;
+    const duration = baseDur + (i % 5) * 0.6;
+    out.push({
       kind: "sedan",
       color: "#888",
       accent: "#111",
       duration,
-      delay: -i * 5,
+      delay: -i * 4,
       pathIdx,
       flip,
       scale: 0.6,
-      imageUrl: v.url,
-      category: v.category,
-    };
-  });
+      imageUrl: entry.url,
+      category: entry.category,
+    });
+  }
+  return out;
 }
+
 
 export default function CityTraffic() {
   const [night, setNight] = useState(0.25);
@@ -375,9 +388,9 @@ export default function CityTraffic() {
   }, []);
   // Trafic = uniquement véhicules uploadés par le joueur (catégories roulantes).
   // Le slider "Véhicules civils" du panel admin sert de plafond (0 = aucun, max = tous).
-  const allCustomCars = buildCarsFromCustom();
+  const allCustomCars = buildCarsFromCustom(admin.civilVehicleCount);
   void customTick;
-  const activeCars = allCustomCars.slice(0, Math.max(0, Math.min(allCustomCars.length, admin.civilVehicleCount)));
+  const activeCars = allCustomCars;
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const carNodes = useRef<(SVGGElement | null)[]>([]);
   const [lights, setLights] = useState<TrafficLight[]>([]);
@@ -422,9 +435,9 @@ export default function CityTraffic() {
     // Trafic civil : conduite tranquille (durée allongée, peu de variation) — pas agressif.
     const rerollSpec = (spec: CarSpec): CarSpec => {
       const newPath = pickPath();
-      const baseDur = Math.max(22, spec.duration); // plancher plus haut → vitesse plus basse
-      // 1.15× à 1.55× de la durée de base → toujours plus lents que les taxis
-      const dur = baseDur * (1.15 + Math.random() * 0.4);
+      const baseDur = Math.max(10, spec.duration);
+      // 0.9× à 1.2× → voitures rapides (~10–18s par tour de path)
+      const dur = baseDur * (0.9 + Math.random() * 0.3);
       return {
         ...spec,
         pathIdx: newPath,
