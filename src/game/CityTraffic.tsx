@@ -343,7 +343,18 @@ function buildCarsFromCustom(count?: number): CarSpec[] {
   // Permet d'avoir du trafic même sans uploads, et boucle modulo si N > pool.length.
   const civilUrls = getCivilCarUrls();
   type Entry = { url: string; category: CustomVehicleCategory };
+  // Toujours garantir des véhicules d'urgence par défaut (police/ambu/pompier)
+  // pour que les missions soient toujours servies, même sans upload custom.
+  const emergencyDefaults: Entry[] = [
+    { url: GAME_ASSETS["police.car"], category: "police" },
+    { url: GAME_ASSETS["police.car"], category: "police" },
+    { url: GAME_ASSETS["emergency.ambulance"], category: "ambulance" },
+    { url: GAME_ASSETS["emergency.ambulance"], category: "ambulance" },
+    { url: GAME_ASSETS["emergency.firetruck"], category: "firetruck" },
+    { url: GAME_ASSETS["emergency.firetruck"], category: "firetruck" },
+  ];
   const pool: Entry[] = [
+    ...emergencyDefaults,
     ...civilUrls.map((url): Entry => ({ url, category: "civil" })),
     ...customs.map((v): Entry => ({ url: v.url, category: v.category })),
   ];
