@@ -346,9 +346,10 @@ export default function TaxiRadio() {
         a.onended = null; a.onerror = null;
         speakBrowser();
       }
-  catch (err) {
-  console.warn("[Radio] speak error
-  };
+} catch (err) {
+  console.warn("[Radio] speak error:", err);
+  speakBrowser();
+}
 
   // ====== Animateur radio (DJ) ======
   const djLine = (stationName: string): RadioNews => {
