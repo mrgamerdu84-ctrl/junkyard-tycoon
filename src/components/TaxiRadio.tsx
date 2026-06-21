@@ -4,9 +4,8 @@ import { RADIO_NEWS_EVENT, AMBIENT_NEWS, WELCOME_JINGLE, getHoroscopeNews, getTv
 
 import junkyCityEmpireAsset from "@/assets/junky_city_empire.mp3";
 import ironToothAsset from "@/assets/iron_tooth.mp3";
-import rockMusic from "@/assets/nastelbom-rock-rock-music-513418.mp3";
-import popMusic from "@/assets/jonasblakewood-pop-524162.mp3";
-
+import rockMusic1 from "@/assets/nastelbom-rock-rock-music-513418.mp3";
+const ROCK_TRACKS = [rockMusic1];
 type Station = {
   id: string;
   name: string;
@@ -27,6 +26,7 @@ const STATIONS: Station[] = [
   { id: "rock", name: "Radio Rock", emoji: "🎸", url: rockMusic, volume: 0.5 },
   { id: "emotions", name: "Radio Émotions", emoji: "💖", url: "https://ice1.somafm.com/lush-128-mp3", volume: 0.5 },
   { id: "kids", name: "Radio Kids", emoji: "🧸", url: "https://ice1.somafm.com/fluid-128-mp3", volume: 0.5 },
+  { id: "pop", name: "Radio Pop", emoji: "🎤", url: "https://ice1.somafm.com/poptron-128-mp3", volume: 0.5 },
 ];
 const STORAGE_KEY = "mttw.taxiRadio";
 const LANG_KEY = "mttw.lang";
