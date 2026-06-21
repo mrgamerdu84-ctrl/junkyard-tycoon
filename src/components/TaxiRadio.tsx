@@ -288,10 +288,11 @@ export default function TaxiRadio() {
     // Fallback de sécurité : si rien ne se passe sous 20s, on libère la séquence
     const failsafe = window.setTimeout(done, 20000);
     const wrapDone = () => { window.clearTimeout(failsafe); done(); };
-   try { window.speechSynthesis.cancel(); } catch {}
-try { window.speechSynthesis.resume(); } catch {}
-ttsUnlockedRef.current = true;
-window.speechSynthesis.speak(u);
+    try {
+      if (ttsAudioRef.current) {
+        try { ttsAudioRef.current.pause(); } catch {}
+        ttsAudioRef.current.src = "";
+        ttsAudioRef.current = null;
       }
       const { supabase } = await import("@/integrations/supabase/client");
       const { data: sessionData } = await supabase.auth.getSession();
@@ -592,23 +593,30 @@ const djLine = (stationName: string): RadioNews => {
 
   return (
     <>
-<audio
-  ref={audioRef}
-  preload="auto"
-onEnded={(e) => {
-  const a = e.currentTarget;
-  const st = STATIONS.find((s) => s.id === stationId);
+      <audio
+        ref={audioRef}
+        preload="auto"
+        onEnded={(e) => {
+          const a = e.currentTarget;
+          const st = STATIONS.find((s) => s.id === stationId);
+          // Fin d'une "chanson" → on relance la séquence : DJ d'abord, PUIS la chanson.
+          // (Ne s'applique qu'aux stations locales en loop ; les flux ne déclenchent pas onEnded.)
+          if (!st?.loop || !st.url || pausedRef.current) return;
+          radioSessionRef.current++;
+          const session = radioSessionRef.current;
+          const startSong = () => {
+            if (session !== radioSessionRef.current || pausedRef.current) return;
+            a.currentTime = 0;
+            a.play().catch(() => {});
+          };
+          speak(djLine(st.name), () => {
+            if (session !== radioSessionRef.current) return;
+            startSong();
+          });
+        }}
+      />
 
-  if (!st?.url || pausedRef.current) return;
-
-  a.src = st.url;
-  a.currentTime = 0;
-  a.load();
-  a.play().catch(() => {});
-}}
-/>
-
-{ticker && (
+      {ticker && (
         <div
           style={{
             position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)",
