@@ -597,14 +597,17 @@ const djLine = (stationName: string): RadioNews => {
   ref={audioRef}
   preload="auto"
   onEnded={(e) => {
-    const a = e.currentTarget;
-    const st = STATIONS.find((s) => s.id === stationId);
+  const a = e.currentTarget;
+  const st = STATIONS.find((s) => s.id === stationId);
 
-    if (!st?.url || pausedRef.current) return;
+  if (!st?.url || pausedRef.current) return;
 
-    a.currentTime = 0;
-    a.play().catch(() => {});
-  }}
+  a.src = st.url;
+  a.currentTime = 0;
+  a.load();
+  a.play().catch(() => {});
+}}
+
 />
 
 {ticker && (
