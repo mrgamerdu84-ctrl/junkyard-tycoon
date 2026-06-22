@@ -1998,11 +1998,36 @@ export default function TaxiTycoon() {
 
 
 
-
-
+  // === Météo réelle : pousse une brève radio dès qu'on a les données, puis toutes les ~6 min ===
+  const realEnv = useRealWorldEnv();
+  useEffect(() => {
+    if (!realEnv) return;
+    const lang = (() => { try { return localStorage.getItem("mttw.lang") || "fr"; } catch { return "fr"; } })();
+    const tempPart = realEnv.tempC != null ? `, ${realEnv.tempC}°C` : "";
+    const news = {
+      fr: `Météo en direct à ${realEnv.city} : ${weatherLabelFr(realEnv.weather)}${tempPart}. ${realEnv.isDay ? "Belle journée pour rouler !" : "Phares allumés, c'est la nuit en ville."}`,
+      en: `Live weather in ${realEnv.city}: ${weatherLabelEn(realEnv.weather)}${tempPart}. ${realEnv.isDay ? "Great day for a ride!" : "Headlights on, night has fallen."}`,
+    };
+    // Pousse une première fois après 20 s, puis toutes les 6 min
+    const t0 = window.setTimeout(() => pushNews(news), 20_000);
+    const iv = window.setInterval(() => {
+      refreshRealWorldEnv(false).then((e) => {
+        if (!e) return;
+        const tp = e.tempC != null ? `, ${e.tempC}°C` : "";
+        pushNews({
+          fr: `Bulletin météo à ${e.city} : ${weatherLabelFr(e.weather)}${tp}.`,
+          en: `Weather update in ${e.city}: ${weatherLabelEn(e.weather)}${tp}.`,
+        });
+      });
+    }, 6 * 60 * 1000);
+    return () => { window.clearTimeout(t0); window.clearInterval(iv); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realEnv?.city, realEnv?.weather, realEnv?.isDay]);
 
   return (
     <>
+      <WeatherNightOverlay />
+
       {/* === Calque SVG du jeu === */}
       <svg
         ref={containerRef}
