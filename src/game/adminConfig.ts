@@ -88,6 +88,10 @@ export const DEFAULT_ADMIN: AdminConfig = {
   policeCarCount: 2,
   aiDifficulty: "normal",
 
+  armoredAutoSpawn: true,
+  armoredFreqMult: 1,
+  rivalsCanHeist: true,
+
   circuitPoints: [],
   circuitTaxiCount: 0,
   circuitSpeedMult: 1,
