@@ -116,8 +116,17 @@ export default function ArmoredTruck() {
   const scheduleNext = (first = false) => {
     const lo = first ? FIRST_SPAWN_MIN_MS : SPAWN_MIN_MS;
     const hi = first ? FIRST_SPAWN_MAX_MS : SPAWN_MAX_MS;
-    const ms = lo + Math.random() * (hi - lo);
-    return window.setTimeout(spawn, ms);
+    const mult = Math.max(0.1, cfgRef.current.armoredFreqMult || 1);
+    const ms = (lo + Math.random() * (hi - lo)) * mult;
+    return window.setTimeout(() => {
+      if (cfgRef.current.armoredAutoSpawn === false) {
+        // auto-spawn désactivé : on re-planifie pour vérifier plus tard si réactivé
+        const t = scheduleNext(false);
+        timerRef.current = t;
+        return;
+      }
+      spawn();
+    }, ms);
   };
 
   const spawn = () => {
