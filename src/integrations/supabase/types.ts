@@ -229,30 +229,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      submit_defi_score: {
-        Args: { _defi_id: string; _score: number }
-        Returns: {
-          completed_at: string | null
-          created_at: string
-          creator_id: string
-          creator_score: number | null
-          duration_sec: number
-          expires_at: string
-          id: string
-          opponent_id: string
-          opponent_score: number | null
-          seed: number
-          status: string
-          updated_at: string
-          winner_id: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "defis"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
