@@ -1,45 +1,64 @@
-## 1. Radio — Synthèse Vocale (TTS)
+# Pack radio + playlists par catégorie + TTS mobile
 
-L'infra existe (`/api/public/radio-tts` + fallback `speechSynthesis` dans `TaxiRadio.tsx`). Le flash infos doit déjà parler — si silencieux, les causes probables sont :
+## 1. Importer les musiques du ZIP
+- Extraire `radio_music_pack.zip` et placer les MP3 dans `src/assets/radio/{rock,pop,electro,retro-wave,relax}/`.
+- Les fichiers sont importés via `import.meta.glob` (eager, `?url`) — Vite bundle-les automatiquement, pas de copier-coller d'URL.
 
-- **iOS / WebView Android** : `speechSynthesis` exige un déverrouillage par geste utilisateur. Le `ttsUnlockedRef` actuel ne se déclenche que sur tap. À renforcer : prime aussi `speechSynthesis` au premier `click` global, et au démarrage de la station.
-- **`a.play()` bloqué** quand le mp3 Lovable arrive : si le play échoue ET qu'on a déjà passé `accessToken`, on ne tombe pas sur `speakBrowser()`. À corriger : sur `catch` du `a.play()`, basculer sur `speakBrowser()` au lieu d'abandonner.
-- **Voix française parfois absente au premier rendu** : `pickVoice` peut renvoyer `null` avant `onvoiceschanged`. Forcer un re-pick lazy à chaque `speak`.
+Contenu réel du pack :
+- rock : 4 morceaux
+- pop : 3 morceaux
+- electro : 1 morceau
+- retro-wave : 1 morceau
+- relax : 1 morceau (Émotions)
+- **kids** : aucun (voir §3)
 
-**Modifs `src/components/TaxiRadio.tsx`** :
-- Ajouter un unlock global `pointerdown` une fois (en plus de l'unlock existant).
-- Dans `speak()`, sur `a.play()` rejeté → appeler `speakBrowser()` puis `wrapDone()` via `u.onend`.
-- Garantir `window.speechSynthesis.resume()` après `cancel()` (workaround Chrome).
+## 2. Playlists par radio dans `src/components/TaxiRadio.tsx`
+- Remplacer le tableau actuel de `url` unique par un système `playlist: string[]` pour les stations locales : `pop`, `electro`, `rock`, `emotions`, `retro` (nouvelle), `kids`.
+- Ajouter un `playlistIndexRef` par station (mémorisé dans une `Map<stationId, number>`).
+- Quand on sélectionne une station, on charge `playlist[index]` et on incrémente l'index modulo `playlist.length` à chaque fin de piste (`onEnded`) → enchaînement auto + boucle infinie.
+- Conserver la logique existante DJ→musique : à chaque fin de piste, on lit la jingle DJ puis on enchaîne la piste suivante.
+- Les stations existantes non touchées : `main`, `jce`, `iron`, `infos` (inchangées).
 
-## 2. Vitesse du trafic
+## 3. Catégories vides (kids, fallback)
+- Aucun morceau Kids fourni → on garde le flux SomaFM existant (`https://ice1.somafm.com/fluid-128-mp3`) en fallback pour `kids` uniquement.
+- Toute autre catégorie sans piste locale retombe sur son flux SomaFM actuel.
 
-Dans `src/game/CityTraffic.tsx`, les durées des voitures sont fixées dans `buildCarsFromCustom()` (l. 348) puis multipliées par 1.15–1.55 dans `rerollSpec()` (l. 427). Ligne 251 = piétons, pas voitures (erreur du brief — on touche aux vraies voitures).
+## 4. TTS multi-plateforme (desktop/Android/iPhone)
+Améliorations dans `TaxiRadio.tsx` sans casser la version actuelle :
+- Déblocage `speechSynthesis` : ajouter `click` en plus de `pointerdown/touchstart/keydown`, retirer le `{ once: true }` pour conserver le déblocage sur iOS qui re-verrouille après chaque pause.
+- Sur iOS Safari : avant chaque `speak()`, appeler `speechSynthesis.resume()` (workaround connu Chrome/iOS où le moteur passe en `paused`).
+- Re-piocher la voix dans `pickVoice()` à chaque speak (les voix arrivent async sur Android).
+- Sur le tap du bouton 📻 (`setOpen`), envoyer aussi une utterance silencieuse pour confirmer le déblocage utilisateur.
+- Conserver le fallback serveur (Lovable AI mp3) déjà en place — il sert de plan B sur les WebView qui n'ont pas de voix native.
 
-- Réduire `baseDur` : `78 → 14` (légers), `96 → 18` (lourds).
-- Réduire le multiplicateur civil : `1.15 + Math.random() * 0.4` → `0.9 + Math.random() * 0.3` (autour de 12–17 s).
-- Baisser le plancher `Math.max(22, ...)` → `Math.max(10, ...)`.
+## 5. Audio mobile
+- `<audio>` reçoit déjà `preload="auto"` ; ajouter `playsInline` et `crossOrigin="anonymous"` (utile pour les flux Soma) pour éviter les blocages iOS.
+- Sur changement de station, toujours appeler `audio.load()` avant `audio.play()` (sinon iOS garde l'ancien buffer).
 
-Résultat : voitures civiles ~12–18 s pour parcourir un path, taxis restent plus rapides via leur propre logique.
+## 6. Hors-scope (non modifié)
+- Aucune autre logique de jeu touchée (trafic, missions, IA, admin, tutoriel).
+- `GAME_ASSETS`, `radioNews`, stations `main/jce/iron/infos`, UI ticker, horloge des infos : intactes.
 
-## 3. Panel Admin — Densité du trafic
+## Fichiers
+- **Nouveau** : `src/assets/radio/rock/*.mp3` (4), `pop/*.mp3` (3), `electro/*.mp3` (1), `retro-wave/*.mp3` (1), `relax/*.mp3` (1) — extraits du ZIP.
+- **Modifié** : `src/components/TaxiRadio.tsx` (playlists + TTS mobile + audio iOS).
 
-Bug : `activeCars = allCustomCars.slice(0, civilVehicleCount)`. Si l'utilisateur a 4 véhicules custom, monter le slider à 36 n'ajoute rien — on est plafonné par la longueur réelle.
+## Détails techniques
+```ts
+const rockTracks   = Object.values(import.meta.glob<string>("/src/assets/radio/rock/*.mp3",       { eager: true, query: "?url", import: "default" }));
+const popTracks    = Object.values(import.meta.glob<string>("/src/assets/radio/pop/*.mp3",        { eager: true, query: "?url", import: "default" }));
+const electroTracks= Object.values(import.meta.glob<string>("/src/assets/radio/electro/*.mp3",    { eager: true, query: "?url", import: "default" }));
+const retroTracks  = Object.values(import.meta.glob<string>("/src/assets/radio/retro-wave/*.mp3", { eager: true, query: "?url", import: "default" }));
+const relaxTracks  = Object.values(import.meta.glob<string>("/src/assets/radio/relax/*.mp3",      { eager: true, query: "?url", import: "default" }));
 
-Correctif dans `src/game/CityTraffic.tsx` (`buildCarsFromCustom` + sélection) :
-
-- Construire **N=civilVehicleCount** specs en bouclant modulo sur la liste des véhicules disponibles (`customs[i % customs.length]`).
-- Inclure les URLs `getCivilCarUrls()` (assets civils par défaut + customs) pour qu'il y ait toujours de quoi remplir, même sans uploads.
-- Varier `pathIdx`, `flip`, `delay` selon `i` pour éviter les superpositions.
-- Élever le max du slider à `50` dans `AdminPanel.tsx` pour rendre la densité visible.
-
-```text
-N = civilVehicleCount  (0..50)
-pool = [...getCivilCarUrls(), ...customsTrafic]
-cars[i] = { url: pool[i % pool.length], pathIdx: allowed[i % allowed.length],
-            flip: i%2, delay: -i*4, scale: 0.6 }
+type Station = { id; name; emoji; url?; playlist?: string[]; loop?; volume?; tts? };
+// rock: { playlist: rockTracks, loop: true }
+// emotions: { playlist: relaxTracks, loop: true }  // calmes/émotionnels
+// + nouvelle station "retro" : { playlist: retroTracks }
+// kids: fallback stream si playlist vide
 ```
 
-## Fichiers modifiés
-- `src/components/TaxiRadio.tsx` — robustesse TTS (unlock + fallback play).
-- `src/game/CityTraffic.tsx` — durées rapides + boucle N véhicules.
-- `src/game/AdminPanel.tsx` — slider densité max 50.
+`onEnded` (station avec playlist) :
+1. incrémente l'index modulo `playlist.length`
+2. joue le DJ (`speak(djLine)`)
+3. au callback, charge `playlist[newIndex]` et `play()`
