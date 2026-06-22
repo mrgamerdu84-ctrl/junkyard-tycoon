@@ -2272,8 +2272,44 @@ export default function TaxiTycoon() {
           );
         })}
 
-        {/* Itinéraires des courses acceptées — désactivés (rendu visuel jugé peu joli).
-            Les marqueurs pickup/dropoff suffisent à guider le joueur. */}
+        {/* Itinéraires des courses acceptées — flèche guide entre le taxi,
+            le client (pickup) et la destination (dropoff). */}
+        <defs>
+          <marker id="tt-route-arrow" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+          </marker>
+          <marker id="tt-route-arrow-orange" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" />
+          </marker>
+        </defs>
+        {jobs.map((j) => {
+          if (j.status !== "accepted") return null;
+          const taxi = taxisRef.current.find((t) => t.jobId === j.id);
+          if (!taxi) return null;
+          const pickup = getSidewalk(j.pickupPath, j.pickup, j.sidePickup);
+          const drop = getSidewalk(j.dropoffPath, j.dropoff, j.sideDrop);
+          if (taxi.mode === "to_pickup") {
+            const here = taxiXY(taxi);
+            return (
+              <line key={"r" + j.id} x1={here.x} y1={here.y} x2={pickup.x} y2={pickup.y}
+                stroke="#3b82f6" strokeWidth="3" strokeOpacity="0.75"
+                strokeDasharray="10 6" strokeLinecap="round"
+                markerEnd="url(#tt-route-arrow)" pointerEvents="none" />
+            );
+          }
+          if (taxi.mode === "to_dest") {
+            const here = taxiXY(taxi);
+            return (
+              <line key={"r" + j.id} x1={here.x} y1={here.y} x2={drop.x} y2={drop.y}
+                stroke="#f59e0b" strokeWidth="3" strokeOpacity="0.75"
+                strokeDasharray="10 6" strokeLinecap="round"
+                markerEnd="url(#tt-route-arrow-orange)" pointerEvents="none" />
+            );
+          }
+          return null;
+        })}
 
         {/* Dropoffs — sur le trottoir, uniquement pour les courses acceptées */}
         {jobs.map((j) => {
