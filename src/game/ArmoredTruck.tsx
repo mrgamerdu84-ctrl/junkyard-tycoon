@@ -14,6 +14,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
 import { useAdminConfig } from "./adminConfig";
+import armoredTruckAsset from "@/assets/armored-truck.png.asset.json";
+
+const DEFAULT_ARMORED_SPRITE = armoredTruckAsset.url;
 
 const SAVE_KEY = "taxi-tycoon-v4";
 const ARMORED_SPRITE_KEY = "jce.armored.sprite";
@@ -74,13 +77,13 @@ export default function ArmoredTruck() {
   const [heister, setHeister] = useState<Heister>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [spriteUrl, setSpriteUrl] = useState<string | null>(() => {
-    try { return localStorage.getItem(ARMORED_SPRITE_KEY); } catch { return null; }
+    try { return localStorage.getItem(ARMORED_SPRITE_KEY) ?? DEFAULT_ARMORED_SPRITE; } catch { return DEFAULT_ARMORED_SPRITE; }
   });
 
   // Re-charge le sprite si modifié depuis l'admin
   useEffect(() => {
     const onStorage = () => {
-      try { setSpriteUrl(localStorage.getItem(ARMORED_SPRITE_KEY)); } catch { /* noop */ }
+      try { setSpriteUrl(localStorage.getItem(ARMORED_SPRITE_KEY) ?? DEFAULT_ARMORED_SPRITE); } catch { /* noop */ }
     };
     window.addEventListener("jce:armored-sprite-changed", onStorage);
     window.addEventListener("storage", onStorage);
