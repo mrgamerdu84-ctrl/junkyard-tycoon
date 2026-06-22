@@ -97,8 +97,6 @@ export default function ArmoredTruck() {
   // Refs d'animation
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const truckRef = useRef<SVGGElement | null>(null);
-  const chaserRef = useRef<SVGGElement | null>(null);
-  const polRefs = useRef<(SVGGElement | null)[]>([]);
 
   // Position courante du camion (en coords SVG) — pour clic & poursuite
   const truckPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -299,7 +297,7 @@ export default function ArmoredTruck() {
   }, [phase, pathIdx, flip]);
 
   const showTruck = phase === "rolling" || phase === "heist";
-  const heisterColor = heister?.color ?? "#facc15";
+  void heister;
 
   const lootBadge = useMemo(() => fmtMoney(loot), [loot]);
 
