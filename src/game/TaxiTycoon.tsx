@@ -106,6 +106,11 @@ type Job = {
   specialMissionId?: string;
   specialFareMult?: number;
   specialXp?: number;
+  // Compagnie qui "détient" la mission (couleur de pastille).
+  // "player" = joueur ; sinon = id de concurrent. Peut changer dynamiquement
+  // pendant que la mission est "offered" (vol / reprise entre compagnies).
+  claimedBy?: string;
+  claimedColor?: string;
 };
 
 
