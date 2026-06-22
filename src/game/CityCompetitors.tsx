@@ -224,6 +224,28 @@ export default function CityCompetitors() {
           {bankruptToast}
         </div>
       )}
+
+      {taunt && (
+        <div
+          key={taunt.id}
+          style={{
+            position: "fixed", bottom: 160, right: 12,
+            zIndex: 10000, maxWidth: 240,
+            background: "rgba(12,14,22,0.92)",
+            color: "#fff7d6", padding: "8px 12px", borderRadius: 12,
+            border: `2px solid ${taunt.color}`,
+            fontWeight: 700, fontSize: 12,
+            fontFamily: "system-ui, sans-serif",
+            boxShadow: "0 6px 18px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div style={{ fontSize: 10, color: taunt.color, fontWeight: 900, marginBottom: 2 }}>
+            {taunt.from} dit :
+          </div>
+          « {taunt.text} »
+        </div>
+      )}
     </>
+
   );
 }
