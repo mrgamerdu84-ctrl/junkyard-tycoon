@@ -34,7 +34,7 @@ function DefisPage() {
   const { user } = useAuth();
   const list = useServerFn(listMyDefis);
   const create = useServerFn(createDefi);
-  const submit = useServerFn(submitDefiScore);
+  const submit = useServerFn(submitDefiRun);
 
   const { data: defis, isLoading, refetch } = useQuery({
     queryKey: ["defis"],
