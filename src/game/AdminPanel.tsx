@@ -429,6 +429,60 @@ export default function AdminPanel() {
                   format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ rivalHQY: v })} />
               </>
             )}
+            {tab === "concurrents" && (
+              <>
+                <div className="adm-hint" style={{ marginBottom: 8 }}>
+                  Ajoute jusqu'à 10 entreprises concurrentes. Les taxis rivaux roulent sur la map dans la couleur choisie.
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+                  {comps.length === 0 && (
+                    <div className="adm-hint">Aucun concurrent. Ajoute-en ci-dessous.</div>
+                  )}
+                  {comps.map((c) => (
+                    <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "#1f242b", borderRadius: 6, border: "1px solid #2a2f38" }}>
+                      <span style={{ width: 14, height: 14, borderRadius: "50%", background: c.color, border: "1px solid #0b0d10", flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#e8edf2", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                        <div style={{ fontSize: 10, color: "#8a8e94" }}>💰 {Math.round(c.treasury).toLocaleString()}$ · ({Math.round(c.x)},{Math.round(c.y)}){c.bankrupt ? " · 💀 faillite" : ""}</div>
+                      </div>
+                      <button onClick={() => removeCompetitor(c.id)} aria-label="Supprimer"
+                        style={{ background: "transparent", border: "1px solid #7f1d1d", color: "#fca5a5", borderRadius: 6, padding: "4px 8px", fontSize: 12, cursor: "pointer" }}>🗑</button>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 10, background: "#0f1318", borderRadius: 8, border: "1px solid #2a2f38" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#f5c542" }}>➕ Nouveau concurrent</div>
+                  <input
+                    type="text"
+                    value={newCompName}
+                    onChange={(e) => setNewCompName(e.target.value)}
+                    placeholder="Nom de l'entreprise"
+                    style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 13 }}
+                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <label style={{ fontSize: 11, color: "#c8ccd2" }}>Couleur</label>
+                    <input
+                      type="color"
+                      value={newCompColor}
+                      onChange={(e) => setNewCompColor(e.target.value)}
+                      style={{ width: 40, height: 28, border: "none", background: "transparent", cursor: "pointer" }}
+                    />
+                    <span style={{ fontSize: 11, color: "#8a8e94", fontFamily: "monospace" }}>{newCompColor}</span>
+                  </div>
+                  <Slider label="Trésorerie de départ"
+                    value={newCompTreasury} min={500} max={100000} step={500}
+                    format={(v) => Math.round(v).toLocaleString() + "$"}
+                    onChange={(v) => setNewCompTreasury(v)} />
+                  <button
+                    onClick={addCompetitor}
+                    disabled={!newCompName.trim() || comps.length >= 10}
+                    style={{ padding: "9px 12px", borderRadius: 8, border: "none", background: comps.length >= 10 ? "#3a3f48" : "#22c55e", color: "#fff", fontWeight: 700, cursor: comps.length >= 10 ? "not-allowed" : "pointer", fontSize: 13 }}
+                  >
+                    {comps.length >= 10 ? "Cap atteint (10)" : "Ajouter ce concurrent"}
+                  </button>
+                </div>
+              </>
+            )}
             {tab === "circuit" && (
               <>
                 <button className="adm-place" onClick={startDraw}>
