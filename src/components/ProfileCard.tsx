@@ -7,6 +7,7 @@ import { deleteOwnAccount } from "@/lib/account.functions";
 import avatarMan from "@/assets/avatar-man.png";
 import avatarWoman from "@/assets/avatar-woman.png";
 import { getAllLiveries, TAXI_PAINTS } from "@/game/TaxiTycoon";
+import { listCustomVehicles, VEHICLE_CATEGORY_LABELS, type CustomVehicle, type CustomVehicleCategory } from "@/game/gameAssets";
 
 
 const TT_SAVE_KEY = "taxi-tycoon-v4";
@@ -343,6 +344,10 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
           <div style={{ fontSize: 10, color: "#8a8e94", marginTop: 4 }}>💡 De nouveaux modèles peuvent être ajoutés par l'admin.</div>
         </div>
 
+        {/* Catalogue véhicules ajoutés par l'admin — lecture seule */}
+        <AdminVehiclesCatalog />
+
+
 
         <div className="pc-actions">
           <button className="pc-btn ghost" type="button" onClick={onClose}>Fermer</button>
@@ -451,6 +456,73 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
+      </div>
+    </div>
+  );
+}
+
+// === Catalogue véhicules ajoutés par l'admin (lecture seule pour le joueur) ===
+// Affiche tous les véhicules importés depuis le panel admin, groupés par
+// catégorie. Le joueur peut consulter mais ne peut pas en ajouter ni en
+// supprimer — seul l'admin a accès à l'import via AdminPanel.
+function AdminVehiclesCatalog() {
+  const [items, setItems] = useState<CustomVehicle[]>(() => listCustomVehicles());
+  useEffect(() => {
+    const refresh = () => setItems(listCustomVehicles());
+    window.addEventListener("storage", refresh);
+    window.addEventListener("jce.customVehicles.changed", refresh as EventListener);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("jce.customVehicles.changed", refresh as EventListener);
+    };
+  }, []);
+
+  if (items.length === 0) {
+    return (
+      <div className="pc-row">
+        <div className="pc-label">🚙 Véhicules ajoutés par l'admin</div>
+        <div style={{
+          background: "#0a0c10", border: "1px dashed #374151", borderRadius: 8,
+          padding: 10, fontSize: 11, color: "#8a8e94", textAlign: "center",
+        }}>
+          Aucun véhicule personnalisé pour le moment.<br />
+          🔒 Seul l'admin peut ajouter de nouveaux véhicules.
+        </div>
+      </div>
+    );
+  }
+
+  const grouped = (Object.keys(VEHICLE_CATEGORY_LABELS) as CustomVehicleCategory[])
+    .map((cat) => ({ cat, list: items.filter((v) => v.category === cat) }))
+    .filter((g) => g.list.length > 0);
+
+  return (
+    <div className="pc-row">
+      <div className="pc-label">🚙 Véhicules ajoutés par l'admin ({items.length})</div>
+      <div style={{ maxHeight: 200, overflowY: "auto", padding: 2 }}>
+        {grouped.map(({ cat, list }) => (
+          <div key={cat} style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10, color: "#fde047", fontWeight: 800, marginBottom: 4, letterSpacing: 0.4 }}>
+              {VEHICLE_CATEGORY_LABELS[cat]}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+              {list.map((v) => (
+                <div key={v.id} title={v.name} style={{
+                  background: "#0a0c10", border: "1px solid #374151", borderRadius: 8,
+                  padding: 6, textAlign: "center",
+                }}>
+                  <img src={v.url} alt={v.name} style={{ width: "100%", height: 38, objectFit: "contain" }} />
+                  <div style={{ fontSize: 9, color: "#e5e7eb", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {v.name}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: 10, color: "#8a8e94", marginTop: 4 }}>
+        🔒 Lecture seule — seul l'admin peut ajouter/retirer des véhicules.
       </div>
     </div>
   );
