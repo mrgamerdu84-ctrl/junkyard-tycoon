@@ -17,7 +17,10 @@ const PED_PHOTO_IMAGES = PEDESTRIAN_PHOTO_URLS;
 // Plus aucun path n'est interdit : toutes les routes de la map sont utilisées
 // par le trafic civil, les courses taxi et les concurrents. On conserve
 // l'export pour la compat avec TaxiTycoon (qui filtre via cet ensemble).
-export const VILLAGE_PATHS = new Set<number>();
+// Index 1 = petite arche tout en haut (y≈0-90) : off-screen en portrait,
+// les voitures semblaient "voler". On l'exclut du trafic et on ne la
+// dessine plus comme route (ci-dessous dans le rendu).
+export const VILLAGE_PATHS = new Set<number>([1]);
 
 // === SÉPARATION DES VOIES (code de la route) ===
 // Demi-largeur d'une route ≈ 23 px. On place chaque véhicule à LANE_HALF px
@@ -252,8 +255,9 @@ const PEDESTRIANS: PedSpec[] = [
   { pathIdx: 0, duration: 160, delay: -55, side: -1, shirt: "#3b82f6", pants: "#1f2937", skin: "#c89372", flip: true, scale: 0.9 },
   { pathIdx: 0, duration: 180, delay: -90, side:  1, shirt: "#fbbf24", pants: "#374151", skin: "#e8b48a", scale: 0.8 },
   { pathIdx: 0, duration: 150, delay: -130,side: -1, shirt: "#10b981", pants: "#111827", skin: "#a06c44", flip: true, scale: 0.88 },
-  { pathIdx: 1, duration: 70,  delay: -5,  side:  1, shirt: "#a855f7", pants: "#1f2937", skin: "#f0c8a0", scale: 0.82 },
-  { pathIdx: 1, duration: 90,  delay: -40, side: -1, shirt: "#ec4899", pants: "#0f172a", skin: "#d4a37a", flip: true, scale: 0.86 },
+  // Path 1 retiré (voir VILLAGE_PATHS) — pas de piétons sur la route off-screen
+  { pathIdx: 2, duration: 165, delay: -10, side:  1, shirt: "#a855f7", pants: "#1f2937", skin: "#f0c8a0", scale: 0.82 },
+  { pathIdx: 0, duration: 195, delay: -200, side: -1, shirt: "#ec4899", pants: "#0f172a", skin: "#d4a37a", flip: true, scale: 0.86 },
   { pathIdx: 2, duration: 170, delay: -20, side:  1, shirt: "#f97316", pants: "#1e293b", skin: "#c89372", scale: 0.85 },
   { pathIdx: 2, duration: 190, delay: -75, side: -1, shirt: "#06b6d4", pants: "#1f2937", skin: "#e8b48a", flip: true, scale: 0.9 },
   { pathIdx: 2, duration: 155, delay: -120,side:  1, shirt: "#ffffff", pants: "#0b1220", skin: "#a06c44", scale: 0.83 },
@@ -961,10 +965,14 @@ export default function CityTraffic() {
 
       <g opacity="0.12">
         {ROADS.map((d, i) => (
-          <path key={i} d={d} stroke="#0b0d10" strokeWidth={i >= 4 ? 34 : 46} fill="none" strokeLinecap="round" />
+          VILLAGE_PATHS.has(i) ? null : (
+            <path key={i} d={d} stroke="#0b0d10" strokeWidth={i >= 4 ? 34 : 46} fill="none" strokeLinecap="round" />
+          )
         ))}
         {ROADS.slice(0, 4).map((d, i) => (
-          <path key={`dash-${i}`} d={d} stroke="#f6d56a" strokeWidth="2.4" strokeDasharray="18 18" fill="none" opacity="0.72" />
+          VILLAGE_PATHS.has(i) ? null : (
+            <path key={`dash-${i}`} d={d} stroke="#f6d56a" strokeWidth="2.4" strokeDasharray="18 18" fill="none" opacity="0.72" />
+          )
         ))}
       </g>
 

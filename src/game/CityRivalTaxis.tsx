@@ -7,7 +7,11 @@
 // simple progression linéaire avec lane offset, fade-out à la faillite.
 // =============================================================
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ROADS } from "./CityTraffic";
+import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
+
+// Routes utilisables par les taxis rivaux : on exclut les "village paths"
+// (ex: index 1, off-screen en portrait) pour ne pas voir des voitures voler.
+const RIVAL_ROAD_IDX = ROADS.map((_, i) => i).filter((i) => !VILLAGE_PATHS.has(i));
 
 type Competitor = {
   id: string;
@@ -42,7 +46,7 @@ function buildSpecs(comps: Competitor[]): RivalSpec[] {
       out.push({
         compId: c.id,
         color: c.color,
-        pathIdx: i % ROADS.length,
+        pathIdx: RIVAL_ROAD_IDX[i % RIVAL_ROAD_IDX.length] ?? 0,
         flip: (i % 2) === 1,
         duration: 16 + ((i * 3) % 7),
         offset: ((i * 0.137) + k * 0.41) % 1,
