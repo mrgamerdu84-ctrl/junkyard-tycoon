@@ -1868,6 +1868,12 @@ export default function TaxiTycoon() {
   const [musicOn, setMusicOn] = useState(false);
   const [missionsOpen, setMissionsOpen] = useState(false);
   const [missionsTab, setMissionsTab] = useState<"contracts" | "depot">("contracts");
+  const [actionsOpen, setActionsOpen] = useState<boolean>(() => {
+    try { return localStorage.getItem("tt-actions-open") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("tt-actions-open", actionsOpen ? "1" : "0"); } catch {}
+  }, [actionsOpen]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const allLiveries = useMemo(() => getAllLiveries(), []);
   const currentLivery = allLiveries.find((l) => l.id === save.liveryId) ?? allLiveries[0];
@@ -2722,6 +2728,17 @@ export default function TaxiTycoon() {
 
 
 
+        <button
+          className="tt-actions-fab"
+          onClick={() => setActionsOpen((v) => !v)}
+          title={actionsOpen ? "Réduire les actions" : "Afficher les actions"}
+          aria-expanded={actionsOpen}
+        >
+          <span className="tt-mfab-ico">{actionsOpen ? "✕" : "🛠️"}</span>
+          <span className="tt-mfab-lbl">{actionsOpen ? "Fermer" : "Actions"}</span>
+        </button>
+
+        {actionsOpen && (
         <div className="tt-actions">
           <button className="tt-btn primary" onClick={buyTaxi} disabled={save.money < taxiBuyCost || taxiCount >= effectiveMaxTaxis}>
             <span className="tt-btn-ico">🚕</span>
@@ -2754,6 +2771,7 @@ export default function TaxiTycoon() {
             <span className="tt-btn-cost">Améliorations</span>
           </button>
         </div>
+        )}
 
 
         {/* === Modal Boutique QG === */}
@@ -3194,6 +3212,23 @@ export default function TaxiTycoon() {
           border-radius: 999px; padding: 1px 6px; min-width: 16px; text-align: center;
         }
         .tt-mfab-badge-blue { background: #3b82f6; }
+
+        .tt-actions-fab {
+          position: absolute; bottom: 16px; right: 10px;
+          display: flex; align-items: center; gap: 6px;
+          background: linear-gradient(180deg, #2a2d34, #14161b);
+          border: 1px solid #f5c542; border-radius: 999px;
+          padding: 10px 16px; color: #fde68a;
+          font-family: inherit; font-weight: 900; font-size: 12px;
+          cursor: pointer; pointer-events: auto;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.65);
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+          min-height: 44px;
+          z-index: 31;
+        }
+        .tt-actions-fab:active { transform: translateY(1px); }
+        .tt-actions-fab:hover { filter: brightness(1.15); }
 
         .tt-missions-overlay {
           position: absolute; inset: 0; z-index: 80;

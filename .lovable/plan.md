@@ -1,104 +1,89 @@
-# Plan — 6 chantiers gameplay & technique
+# Plan global — chantiers restants
 
-Tout est inclus dans cette passe. Ordre d'exécution = ordre ci-dessous (trafic en premier).
+Bon ap. Voici le plan complet de ce qui reste à faire, dans l'ordre où je vais l'exécuter une fois que tu valides.
 
----
+## Phase 2 — Refonte UI (HUD + onglets)
 
-## 1. Trafic : anti-collision + voies séparées (`src/game/CityTraffic.tsx`)
+**Objectif** : alléger l'écran principal, regrouper les infos secondaires dans des panneaux à la demande, agrandir les zones tactiles.
 
-**Anti-collision (distance de sécurité 70 px)**
-- Chaque véhicule expose sa position courante dans une `ref` partagée (Map<id, {x,y,dir,lane}>).
-- À chaque frame (rAF), pour chaque voiture : projeter un "ray" de 70 px dans sa direction de déplacement et chercher un autre véhicule dont le centre tombe dans ce cône (même voie, même sens).
-- Si obstacle détecté → l'animation CSS passe en `animation-play-state: paused` (freinage immédiat) ; reprise quand la voie est libre. Cela remplace le `duration` fixe par un mouvement contrôlé.
-- Effet visible : files d'attente naturelles aux intersections, plus d'empilement.
+**HUD principal (toujours visible)** — réduit à 4 éléments :
+- Argent (montant + animation de gain)
+- Jauge carburant
+- Réputation (chiffre + petite barre)
+- Bouton **SOS / Intervention** (gros, pouce-friendly)
 
-**Voies séparées droite/gauche**
-- Définir 4 couloirs par axe : NORD (x = +offset), SUD (x = −offset), EST (y = +offset), OUEST (y = −offset). Offset = demi-largeur de route − marge.
-- Au spawn, la direction du véhicule détermine son couloir : aucune voiture ne peut emprunter le couloir opposé.
-- Aux intersections, table de transitions autorisées (tout droit ou tourne dans le sens de la circulation à droite).
+**Bouton ☰ Menu (en haut à droite)** → ouvre un drawer mobile avec onglets :
+- **Profil & Permis** — XP, niveau, permis débloqués, succès
+- **Entreprise** — taxis possédés, upgrades, entretien, finances
+- **Concurrents** — classement, parts de marché, événements rivaux
+- **Événements** — flash news, crimes en cours, missions
+- **Réglages** — admin, langue, sauvegarde manuelle, reset
 
-## 2. Fix tap "lancer mission" (mobile + desktop)
+**Boutons tactiles** : minimum 44×44 px (norme Apple), espacement ≥ 8 px, contrastes renforcés sur fond sombre.
 
-- Repérer le bouton/icône de mission (probable : `CityHud.tsx` ou marker dans `TaxiTycoon.tsx`).
-- Remplacer `onClick` seul par `onPointerDown` + `touch-action: manipulation` CSS, avec `e.preventDefault()` pour bloquer le délai 300 ms iOS.
-- Test sur viewport mobile (393×713) via Playwright pour confirmer.
-
-## 3. Radio + TTS mobile (`src/components/TaxiRadio.tsx`)
-
-**TTS iOS/Android**
-- Garder l'unlock global déjà ajouté (pointerdown silencieux + `speechSynthesis.resume()`).
-- Ajouter une option de bascule serveur (Lovable AI TTS via server function) en fallback si `speechSynthesis.speaking` ne démarre pas après 800 ms — couvre WebView Android.
-
-**Fréquence des annonces**
-- Annonce de l'heure du jeu UNIQUEMENT sur tick `minutes === 0 || minutes === 30` (lecture depuis `cityClock.ts`).
-- Entre deux annonces horaires : uniquement musique (playlist) + DJ courte 1× toutes les ~4 pistes max.
-- Plus de "spam" : un flag `lastAnnounceAt` empêche deux annonces dans la même fenêtre de 5 min de jeu.
-
-## 4. PWA hors-ligne (utilise le skill PWA officiel)
-
-- Installation de `vite-plugin-pwa` avec `generateSW`, `registerType: "autoUpdate"`.
-- Wrapper `src/lib/registerSW.ts` qui REFUSE l'enregistrement en dev, iframe, `id-preview--*`, `*.lovableproject.com`, `?sw=off` (conformément au skill PWA).
-- Cache : `NetworkFirst` pour les navigations HTML, `CacheFirst` pour les assets hashés (images voitures, MP3 radio, fonts).
-- Manifest : nom, icônes, `display: standalone`, theme color.
-- Sauvegarde joueur : déjà en `localStorage` côté `useGameStore` (à vérifier) — sinon migration vers `localStorage` pour plaques/niveau/argent.
-- L'offline ne marche QUE sur le site publié (jamais dans le preview Lovable).
-
-## 5. Concurrents évolutifs + plaque = permis
-
-**Plaque qui évolue**
-- Format plaque dépend du niveau : `LV01-AAA-001` → `LV99-ZZZ-999`. Affichage dans `HomeScreen` / profil.
-
-**Nouveau concurrent à chaque niveau** (`src/game/CityCompetitors.tsx`)
-- À chaque level-up, spawn d'un QG concurrent (bâtiment coloré) à une position libre de la carte.
-- Couleur HQ = hue rotation basée sur `competitorIndex`.
-- Agressivité croissante : vitesse de leurs taxis × (1 + 0.05 × index), fréquence de "narguage" textuel à l'écran (toast bulle) × (1 + 0.1 × index).
-- Cap à 10 concurrents pour rester lisible.
-
-## 6. Radar, braquages, sirènes, police garée
-
-**Radar automatique**
-- Marker noir fixe sur certaines routes. Si un taxi (joueur OU IA) franchit le radar à vitesse > limite → flash blanc plein écran 120 ms + son "click" + débit 50 $ au joueur (uniquement si c'est lui).
-
-**Braquages rares (5%/jour)**
-- Dans `CrimeEvents.tsx` : roll au tick "nouveau jour" du `cityClock` ; si `Math.random() < 0.05` → spawn camion de banque + mission braquage.
-
-**Sirènes ambiance**
-- Loop audio très bas volume (0.05) de sirènes lointaines, démarré après première interaction utilisateur. Toggle dans Admin Panel.
-
-**Police/pompiers garés** (`CityTraffic.tsx` + `InterventionDispatcher.tsx`)
-- Retirer les véhicules d'urgence du flux de trafic normal.
-- Définir positions garées : commissariat(s) et caserne(s) sur la carte. Sprites statiques.
-- Quand `InterventionDispatcher` déclenche une intervention (braquage, accident) → spawn d'un véhicule d'urgence depuis le QG le plus proche, gyrophare ON, trajet jusqu'au lieu, puis retour au QG, puis re-stationnement.
+**Fichiers touchés** :
+- `src/game/TaxiTycoon.tsx` (extraction du HUD compact + drawer)
+- nouveau `src/game/HudPanels/` (TabProfile, TabBusiness, TabCompetitors, TabEvents, TabSettings)
+- réutilisation de `src/components/ui/sheet` et `tabs` (shadcn déjà présents)
 
 ---
 
-## Détails techniques
+## Phase 3 — Passages piétons (IA traversée)
 
-```text
-Trafic loop (rAF):
-  for each car:
-    pos = computeCurrentPos(car)        // depuis %-progression CSS
-    obstacle = scanAhead(pos, dir, 70px, sameLane)
-    if obstacle: pause animation
-    else: resume animation
+**Objectif** : les piétons traversent uniquement aux passages piétons, attendent que la voie soit libre.
+
+**Étapes** :
+1. Génération automatique de **points de passage** aux intersections des `ROADS` (détection par proximité des extrémités/intersections de paths).
+2. Chaque piéton qui veut changer de trottoir choisit le passage le plus proche, s'y dirige, **attend** que le feu soit rouge **et** qu'aucune voiture ne soit dans la zone (raycast court), puis traverse en ligne droite.
+3. Rendu visuel : bandes blanches (zébra) dessinées sous le calque voitures, et marqueurs invisibles pour l'IA.
+4. Synchronisation avec les feux existants (`trafficLights.ts`) — déjà compatible (feu vert piéton quand voiture rouge).
+
+**Fichiers touchés** :
+- `src/game/CityTraffic.tsx` (logique piétons + rendu zébra)
+- nouveau helper `src/game/crosswalks.ts` (détection + lookup)
+
+---
+
+## Phase 4 — Audit des voies (validation map)
+
+**Objectif** : s'assurer que **toutes** les routes sont utilisées par le trafic, sans véhicule hors-route.
+
+**Étapes** :
+1. Script de validation dev (console) qui liste les paths jamais empruntés par les `activeCars` au bout de N secondes.
+2. Vérification que `buildCarsFromCustom` répartit bien sur **tous** les `allowedPaths` (actuellement `i % allowedPaths.length` → OK mais à confirmer avec peu de véhicules).
+3. Augmentation du minimum de véhicules par path si certains sont déserts.
+4. Vérification visuelle : capture d'écran Playwright pour confirmer qu'aucun véhicule ne sort de l'asphalte.
+
+**Fichiers touchés** : `src/game/CityTraffic.tsx` (ajustement répartition si besoin).
+
+---
+
+## Audit global final
+
+Une fois les 3 phases livrées, je fais une passe complète :
+
+1. **Build & typecheck** — zéro erreur.
+2. **Perf check Playwright** — mesure FPS sur mobile émulé (392×713), comparaison avant/après culling.
+3. **Console** — vérification : aucun warning React, aucune erreur runtime.
+4. **Visuel** — captures écran : home, jeu actif, drawer ouvert sur chaque onglet, vue parking en cours, vue passage piéton.
+5. **Régressions à vérifier explicitement** :
+   - Sauvegarde auto + reprise (localStorage `taxi-tycoon-v4`)
+   - Stationnement dynamique (3-6 voitures garées)
+   - Pourboires, usure, prix par district
+   - Interventions police/ambulance/pompiers
+   - Sons/sirènes ambiantes
+6. **Rapport synthétique** : ce qui a changé, FPS avant/après, points d'attention restants.
+
+---
+
+## Ordre d'exécution
+
+```
+Phase 2 (UI)  →  Phase 3 (passages piétons)  →  Phase 4 (audit voies)  →  Audit global
 ```
 
-Fichiers touchés :
-- `src/game/CityTraffic.tsx` (gros refactor : voies + raycasting)
-- `src/game/CrimeEvents.tsx` (5% braquage, radar)
-- `src/game/InterventionDispatcher.tsx` (dispatch véhicules garés)
-- `src/game/CityCompetitors.tsx` (spawn par level-up)
-- `src/components/TaxiRadio.tsx` (TTS fallback serveur + cadence horaire)
-- `src/game/CityHud.tsx` ou marker mission (pointerdown)
-- `src/game/HomeScreen.tsx` (plaque évolutive)
-- `src/game/AdminPanel.tsx` (toggle sirènes, toggle radar, toggle PWA debug)
-- Nouveau : `src/lib/registerSW.ts`, `public/manifest.webmanifest`, icônes PWA
-- `vite.config.ts` (ajout `vite-plugin-pwa`)
-- Nouveau server fn : `src/lib/tts.functions.ts` (fallback TTS Lovable AI)
+Estimation : Phase 2 ≈ la plus longue (refacto HUD), les autres plus rapides.
 
-## Hors scope
-- Refonte visuelle de la map.
-- Modification du système économique (prix courses, etc.).
-- Multijoueur réseau.
+**Rien d'autre ne sera touché** (économie, sauvegarde, IA taxi joueur, événements crimes, sons) sauf si l'audit final révèle un bug.
 
-Une fois ce plan approuvé, j'attaque dans l'ordre 1 → 6.
+Quand tu reviens de manger, valide ce plan et j'enchaîne tout d'un coup.
