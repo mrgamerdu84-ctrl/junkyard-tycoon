@@ -97,8 +97,6 @@ export default function ArmoredTruck() {
   // Refs d'animation
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const truckRef = useRef<SVGGElement | null>(null);
-  const chaserRef = useRef<SVGGElement | null>(null);
-  const polRefs = useRef<(SVGGElement | null)[]>([]);
 
   // Position courante du camion (en coords SVG) — pour clic & poursuite
   const truckPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -287,35 +285,9 @@ export default function ArmoredTruck() {
       truckPosRef.current = { x: tx, y: ty };
       truckRef.current?.setAttribute("transform", `translate(${tx.toFixed(2)},${ty.toFixed(2)}) rotate(${ang.toFixed(2)})`);
 
-      // Animer le braqueur + flics autour du camion
-      if (phase === "heist" && chaserRef.current) {
-        const tHeist = (now - heistStartRef.current) / 1000;
-        const u2 = Math.min(1, tHeist / HEIST_DURATION_S);
-        // Le braqueur arrive (0→0.4) puis repart vers QG joueur (0.4→1)
-        const hqX = 230, hqY = 900; // par défaut HQ joueur (cohérent adminConfig)
-        let cx: number, cy: number;
-        if (u2 < 0.4) {
-          const k = u2 / 0.4;
-          cx = hqX + (tx - hqX) * k;
-          cy = hqY + (ty - hqY) * k;
-        } else {
-          const k = (u2 - 0.4) / 0.6;
-          cx = tx + (hqX - tx) * k;
-          cy = ty + (hqY - ty) * k;
-        }
-        chaserRef.current.setAttribute("transform", `translate(${cx.toFixed(2)},${cy.toFixed(2)})`);
-        // Flics : convergent toujours sur le braqueur avec lag
-        for (let i = 0; i < polRefs.current.length; i++) {
-          const node = polRefs.current[i];
-          if (!node) continue;
-          const lag = 0.08 + i * 0.06;
-          const offX = Math.cos(now / 220 + i) * 24;
-          const offY = Math.sin(now / 200 + i * 1.7) * 18;
-          const px = cx - (cx - hqX) * lag + offX;
-          const py = cy - (cy - hqY) * lag + offY;
-          node.setAttribute("transform", `translate(${px.toFixed(2)},${py.toFixed(2)})`);
-        }
-      }
+      // NB : plus aucun véhicule dessiné en dur (braqueur / flics).
+      // Le visuel de poursuite est porté par les taxis du joueur et des rivaux
+      // ainsi que les voitures de police importées via l'admin.
 
       raf = requestAnimationFrame(step);
     };
@@ -325,7 +297,7 @@ export default function ArmoredTruck() {
   }, [phase, pathIdx, flip]);
 
   const showTruck = phase === "rolling" || phase === "heist";
-  const heisterColor = heister?.color ?? "#facc15";
+  void heister;
 
   const lootBadge = useMemo(() => fmtMoney(loot), [loot]);
 
@@ -354,35 +326,6 @@ export default function ArmoredTruck() {
 
         {showTruck && (
           <>
-            {/* Flics (uniquement pendant le heist) */}
-            {phase === "heist" && [0, 1, 2].map((i) => (
-              <g key={`pol-${i}`} ref={(el) => { polRefs.current[i] = el; }}>
-                <ellipse cx="0" cy="2" rx="9" ry="3" fill="rgba(0,0,0,0.35)" />
-                <rect x="-7" y="-12" width="14" height="24" rx="3" fill="#1e3a8a" stroke="#0b0d10" strokeWidth="1.2" />
-                <rect x="-6" y="-3" width="12" height="3" fill="#fff" />
-                <rect x="-5" y="-11" width="4" height="3" rx="0.8" fill={i % 2 ? "#ef4444" : "#3b82f6"}>
-                  <animate attributeName="fill" values="#ef4444;#3b82f6;#ef4444" dur="0.6s" repeatCount="indefinite" />
-                </rect>
-                <rect x="1" y="-11" width="4" height="3" rx="0.8" fill={i % 2 ? "#3b82f6" : "#ef4444"}>
-                  <animate attributeName="fill" values="#3b82f6;#ef4444;#3b82f6" dur="0.6s" repeatCount="indefinite" />
-                </rect>
-              </g>
-            ))}
-
-            {/* Braqueur (taxi couleur joueur ou rival) */}
-            {phase === "heist" && heister && (
-              <g ref={chaserRef}>
-                <ellipse cx="0" cy="3" rx="10" ry="3" fill="rgba(0,0,0,0.4)" />
-                <rect x="-8" y="-13" width="16" height="26" rx="4" fill={heisterColor} stroke="#0b0d10" strokeWidth="1.4" />
-                <rect x="-7" y="-3" width="14" height="4" fill="#fff" />
-                <rect x="-7" y="-3" width="2.5" height="2" fill="#0b0d10" />
-                <rect x="-2" y="-3" width="2.5" height="2" fill="#0b0d10" />
-                <rect x="3" y="-3" width="2.5" height="2" fill="#0b0d10" />
-                <text x="0" y="9" textAnchor="middle" fontSize="9" fontWeight="900" fill="#0b0d10" fontFamily="system-ui">
-                  💰
-                </text>
-              </g>
-            )}
 
             {/* Camion blindé — cliquable */}
             <g
