@@ -64,6 +64,9 @@ export default function AdminPanel() {
   const [tab, setTab] = useState<"trafic" | "hq" | "missions" | "rival" | "circuit" | "skins" | "export">("trafic");
   const [placeMode, setPlaceMode] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
+  const [resetGameOpen, setResetGameOpen] = useState(false);
+  const [resetGamePhrase, setResetGamePhrase] = useState("");
+  const [resetGameMsg, setResetGameMsg] = useState("");
   const cfg = useAdminConfig();
 
   // Rappel du déverrouillage pour la session courante
