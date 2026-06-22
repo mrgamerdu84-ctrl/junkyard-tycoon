@@ -46,7 +46,7 @@ function buildSpecs(comps: Competitor[]): RivalSpec[] {
       out.push({
         compId: c.id,
         color: c.color,
-        pathIdx: i % ROADS.length,
+        pathIdx: RIVAL_ROAD_IDX[i % RIVAL_ROAD_IDX.length] ?? 0,
         flip: (i % 2) === 1,
         duration: 16 + ((i * 3) % 7),
         offset: ((i * 0.137) + k * 0.41) % 1,
