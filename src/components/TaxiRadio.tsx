@@ -418,7 +418,7 @@ export default function TaxiRadio() {
       const res = await fetch("/api/public/radio-tts", {
         method: "POST",
         headers,
-        body: JSON.stringify({ text, lang: l }),
+        body: JSON.stringify({ text, lang: l, voice }),
       });
       if (!res.ok) {
         console.warn("[Radio] TTS HTTP", res.status);
