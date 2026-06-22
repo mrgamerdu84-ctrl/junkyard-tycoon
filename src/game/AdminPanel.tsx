@@ -37,6 +37,18 @@ export default function AdminPanel() {
   const [newCompName, setNewCompName] = useState("");
   const [newCompColor, setNewCompColor] = useState("#ef4444");
   const [newCompTreasury, setNewCompTreasury] = useState(15000);
+  const [newCompVehicleUrl, setNewCompVehicleUrl] = useState<string>("");
+  const [newCompVehicleName, setNewCompVehicleName] = useState<string>("");
+
+  const onPickCompVehicle = (file: File | null) => {
+    if (!file) { setNewCompVehicleUrl(""); setNewCompVehicleName(""); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setNewCompVehicleUrl(String(reader.result || ""));
+      setNewCompVehicleName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const addCompetitor = () => {
     if (!newCompName.trim()) return;
@@ -50,9 +62,12 @@ export default function AdminPanel() {
       treasury: Math.max(500, newCompTreasury),
       taxiCount: 6,
       bankrupt: false,
+      vehicleUrl: newCompVehicleUrl || undefined,
     };
     setCompetitorsFromCloud([...comps, next]);
     setNewCompName("");
+    setNewCompVehicleUrl("");
+    setNewCompVehicleName("");
   };
 
   const removeCompetitor = (id: string) => {
