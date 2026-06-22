@@ -774,6 +774,8 @@ function SkinsTab() {
 
       <CustomVehiclesSection />
 
+      <CustomPedestriansSection />
+
       <button
         onClick={reload}
         style={{
