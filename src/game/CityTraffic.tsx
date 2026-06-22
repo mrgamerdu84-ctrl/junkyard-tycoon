@@ -160,6 +160,13 @@ export function lockToSidewalk(
 
 function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGPathElement | null)[]> }) {
   const nodes = useRef<(SVGGElement | null)[]>([]);
+  // Rotation aléatoire des sprites parmi tous ceux dispos (défaut + custom admin).
+  const [pool, setPool] = useState<string[]>(() => getPedPhotoImages());
+  useEffect(() => {
+    const onChange = () => setPool(getPedPhotoImages());
+    window.addEventListener("jce.customPedestrians.changed", onChange);
+    return () => window.removeEventListener("jce.customPedestrians.changed", onChange);
+  }, []);
   useEffect(() => {
     const lens = pathRefs.current.map(p => p ? p.getTotalLength() : 0);
     if (lens.some(l => l <= 1)) return;
