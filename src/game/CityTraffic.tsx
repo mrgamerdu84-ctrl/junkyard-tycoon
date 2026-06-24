@@ -741,8 +741,7 @@ export default function CityTraffic() {
 
       // 1c) Stationnement supprimé : trafic continu — aucune voiture ne se gare.
 
-        }
-      }
+
 
 
       // 2) avancer et appliquer le transform
