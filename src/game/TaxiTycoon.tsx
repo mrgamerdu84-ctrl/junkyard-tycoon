@@ -2333,7 +2333,9 @@ export default function TaxiTycoon() {
 
   return (
     <>
+      {officeOpen && <OfficeControlCenter onClose={() => setOfficeOpen(false)} />}
       <WeatherNightOverlay />
+
 
       {/* === Calque SVG du jeu === */}
       <svg
