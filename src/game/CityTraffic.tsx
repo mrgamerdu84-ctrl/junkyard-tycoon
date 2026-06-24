@@ -505,30 +505,16 @@ export default function CityTraffic() {
   });
   useEffect(() => {
     const recompute = () => {
-      const svg = svgRef.current;
-      if (!svg) return;
-      const r = svg.getBoundingClientRect();
-      if (r.width <= 0 || r.height <= 0) return;
+      // preserveAspectRatio="xMidYMid meet" : tout le viewBox 1920×1080 est
+      // toujours visible (avec letterbox éventuel). On garde la marge pour
+      // pré-activer les véhicules à la frange.
       const VB_W = 1920, VB_H = 1080;
-      const containerRatio = r.width / r.height;
-      const vbRatio = VB_W / VB_H;
-      let visW: number, visH: number;
-      if (containerRatio > vbRatio) {
-        // largeur entièrement visible, hauteur slicée
-        visW = VB_W;
-        visH = VB_W / containerRatio;
-      } else {
-        // hauteur entièrement visible, largeur slicée
-        visH = VB_H;
-        visW = VB_H * containerRatio;
-      }
-      const cx = VB_W / 2, cy = VB_H / 2;
       const margin = 220;
       visibleRect.current = {
-        minX: cx - visW / 2 - margin,
-        minY: cy - visH / 2 - margin,
-        maxX: cx + visW / 2 + margin,
-        maxY: cy + visH / 2 + margin,
+        minX: -margin,
+        minY: -margin,
+        maxX: VB_W + margin,
+        maxY: VB_H + margin,
       };
     };
     recompute();
@@ -538,6 +524,7 @@ export default function CityTraffic() {
       window.removeEventListener("resize", recompute);
       window.removeEventListener("orientationchange", recompute);
     };
+
   }, []);
   const [lights, setLights] = useState<TrafficLight[]>([]);
 
