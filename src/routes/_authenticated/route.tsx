@@ -17,9 +17,14 @@
 // Edit freely. This file is only re-injected when deleted entirely.
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { supabase } from '@/integrations/supabase/client'
+import { useCloudCustomizations } from '@/hooks/useCloudCustomizations'
 
-// Lovable's Supabase auth scaffolds use `/auth`; change this if the app uses another sign-in route.
 const SIGN_IN_ROUTE = '/auth'
+
+function AuthedShell() {
+  useCloudCustomizations()
+  return <Outlet />
+}
 
 export const Route = createFileRoute('/_authenticated')({
   ssr: false,
@@ -30,5 +35,5 @@ export const Route = createFileRoute('/_authenticated')({
     }
     return { user: data.user }
   },
-  component: () => <Outlet />,
+  component: AuthedShell,
 })
