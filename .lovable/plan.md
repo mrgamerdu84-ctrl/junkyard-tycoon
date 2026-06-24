@@ -1,55 +1,44 @@
+## 1. Sync des personnalisations entre appareils (voitures, camion blindé, etc.)
 
-## Objectif
+**Problème** : Les véhicules custom (voitures, camion blindé, piétons, sprite du blindé, overrides d'assets) sont stockés uniquement en `localStorage`, donc invisibles sur un autre téléphone.
 
-Repartir sur une base propre. Un seul composant `GameMap` pilote l'affichage de la carte et le mouvement des taxis selon les coordonnées strictes fournies — toutes les anciennes couches de trafic qui calculaient leurs propres trajectoires sont coupées.
+**Solution** : Sauvegarder ces personnalisations dans Lovable Cloud, liées au compte utilisateur, avec fallback localStorage hors-ligne.
 
-## 1. Nouveau fichier `src/game/GameMap.tsx`
+- Nouvelle table `user_customizations` (1 ligne par user) :
+  - `custom_vehicles` (JSON — la liste actuelle `jce.customVehicles`)
+  - `custom_pedestrians` (JSON — `jce.customPedestrians`)
+  - `armored_sprite` (TEXT — `jce.armoredSprite`)
+  - `asset_overrides` (JSON — `jce.assetOverrides`)
+- RLS : chaque user lit/écrit uniquement sa propre ligne. GRANT authenticated + service_role.
+- Hook `useCloudCustomizations()` qui :
+  - Au login : télécharge depuis le cloud → écrit dans localStorage → déclenche les events `jce.customVehicles.changed` / reload du sprite blindé.
+  - À chaque ajout/suppression : pousse vers le cloud (debounce 800 ms).
+- Wrappers `addCustomVehicle`, `removeCustomVehicle`, `setArmoredSprite`, override d'asset → marquent dirty pour upload.
 
-Composant unique, autonome. Aucune logique de détection auto, aucun ancien tracé.
+**Résultat** : tu changes une voiture / le camion blindé sur ton téléphone A → tu te connectes sur ton téléphone B → tout est là.
 
-Constantes injectées en dur (pas d'import de l'ancien `mapConfig` pour éviter tout conflit) :
+## 2. Phrase de copyright
 
-```ts
-const ROADS = {
-  axeGauche: [{x:100,y:150},{x:420,y:360},{x:320,y:780},{x:100,y:1000}],
-  axeDroite: [{x:1800,y:100},{x:1460,y:280},{x:1520,y:740},{x:1850,y:950}],
-  axeBas:    [{x:320,y:780},{x:960,y:840},{x:1520,y:740}],
-};
-const HANGARS = { gauche:{x:880,y:520}, droite:{x:1040,y:520} };
-const PORTAIL = { x:960, y:840 };
-const IDLE_PARKING = { x:1000, y:920 };
-```
+Ajouter en bas de l'écran d'accueil (`HomeScreen`) et mettre à jour la ligne finale de `mentions-legales.tsx` avec **exactement** :
 
-Rendu :
-- `<svg viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid meet">` calé sur l'image de fond `citymap-v3.jpg` (même viewBox que le `<img>` existant → alignement pixel-près).
-- Un `<path>` par axe (3 polylines reliant les waypoints, fin, semi-transparent — utile pour vérifier le tracé, peut être masqué par flag).
-- Pour chaque taxi du joueur : un sprite animé via `<animateMotion>` SVG sur un `<path>` composé Hangar → Portail → axe choisi (Gauche/Droite/Bas). Au retour idle, path Portail → IDLE_PARKING.
+> 2026 My taxi world rivalité — Tous droits réservés.
 
-Pas de boucle physique, pas de `requestAnimationFrame` maison : `animateMotion` gère l'interpolation strictement le long du path = zéro dérive.
+## 3. Radios — réparation
 
-API exposée : `<GameMap taxiCount={n} />` (lit le nombre de taxis depuis le state actuel de `TaxiTycoon` via un petit hook ou prop).
+Le `<audio>` ne se recharge pas correctement quand on change de piste/station sur certains navigateurs (le `src` change mais `load()` n'est pas appelé) → certaines pistes restent muettes ou bloquées sur la précédente.
 
-## 2. `src/routes/index.tsx`
+Corrections dans `RadioPlayer.tsx` :
+- Appeler `audio.load()` à chaque changement de `track.url`.
+- Bloquer la lecture suivante tant que `loadedmetadata` n'est pas reçu (évite les `play()` rejetés).
+- Logger l'event `error` de l'audio + passer auto à la piste suivante si une piste casse (URL morte).
+- Vérifier que les 13 fichiers `.asset.json` pointent vers des URLs valides ; remplacer ceux qui renvoient 404.
 
-Dans le bloc `<div className="tt-world">` :
-- **Supprimer** : `<CityTraffic />`, `<CityCompetitors />`, `<CityRivalTaxis />`, `<EmergencyStations />`, `<EmergencyPatrols />`, `<PlainclothesCops />`, `<CrimeEvents />`, `<CrimeResponses />`, `<InterventionDispatcher />`, `<ArmoredTruck />`, `<DebugMapGrid />`.
-- **Remplacer** par `<GameMap />`.
-- **Garder intacts** : `<img>` de fond, vignette, `<TaxiTycoon />` (UI bas : Acheter taxi, Améliorer dépôt…), `<CityHud />`, `<AdminPanel />`, `<RulesPanel />`, `<VersionBanner />`, `<GameMenu />`, `<RadioPlayer />`, bouton zoom.
+## Techniques
 
-## 3. `src/game/TaxiTycoon.tsx`
+- Migration SQL : `public.user_customizations (user_id PK → auth.users, ...)`, GRANT + RLS `auth.uid() = user_id`, trigger `updated_at`.
+- Server functions `getMyCustomizations` / `saveMyCustomizations` (avec `requireSupabaseAuth`).
+- Pas d'autre changement de logique gameplay.
 
-Aucune modif fonctionnelle des boutons (achat taxi / upgrade dépôt restent identiques). On supprime juste son rendu interne de taxis sur la carte (ancien système) — ils sont désormais affichés par `GameMap`. Le compteur de taxis achetés est partagé via le state existant (lu par `GameMap`).
-
-Si le state n'est pas déjà exporté, ajout d'un petit store local (zustand-style via `useSyncExternalStore`) pour que `GameMap` lise `taxiCount` sans toucher à la logique d'achat.
-
-## 4. Fichiers laissés en place mais inutilisés
-
-`CityTraffic.tsx`, `CityRivalTaxis.tsx`, `EmergencyPatrols.tsx`, etc. ne sont plus montés → plus aucun calcul en arrière-plan. On ne les supprime pas (rollback facile), mais ils sortent du graphe React.
-
-## 5. Vérification
-
-Après build : lancer Playwright en headless, screenshot de `/`, vérifier visuellement qu'un taxi sort du hangar (880,520), passe par le portail (960,840) et suit un des 3 axes sans déborder.
-
-## Question avant exécution
-
-L'image de fond actuelle est `citymap-v3.jpg` (asset déjà câblé dans `index.tsx`). Tu mentionnes `1000024732.jpg` — je pars sur l'asset actuel `citymap-v3.jpg`, dis-moi si tu veux qu'on bascule sur un autre fichier image avant que j'implémente.
+Fichiers touchés (estimation) :
+- nouveau : `supabase/migrations/*_user_customizations.sql`, `src/lib/customizations.functions.ts`, `src/hooks/useCloudCustomizations.ts`
+- édités : `src/game/gameAssets.ts`, `src/game/ArmoredTruck.tsx`, `src/game/RadioPlayer.tsx`, `src/game/HomeScreen.tsx`, `src/routes/mentions-legales.tsx`, `src/routes/_authenticated/route.tsx` (montage du hook)

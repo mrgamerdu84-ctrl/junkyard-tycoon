@@ -20,7 +20,7 @@ const STATIONS = [
     icon: "🚓",
     color: "#3b82f6",
     category: "police" as const,
-    x: 250, y: 950,
+    x: 360, y: 760,
     sprite: GAME_ASSETS["police.car"],
   },
   {
@@ -29,7 +29,7 @@ const STATIONS = [
     icon: "🚒",
     color: "#ef4444",
     category: "firetruck" as const,
-    x: 1500, y: 180,
+    x: 1460, y: 220,
     sprite: GAME_ASSETS["emergency.firetruck"],
   },
   {
@@ -38,7 +38,7 @@ const STATIONS = [
     icon: "🚑",
     color: "#22c55e",
     category: "ambulance" as const,
-    x: 1670, y: 950,
+    x: 1100, y: 880,
     sprite: GAME_ASSETS["emergency.ambulance"],
   },
 ];
@@ -95,7 +95,7 @@ export default function EmergencyStations() {
       `}</style>
       <svg
         viewBox="0 0 1920 1080"
-        preserveAspectRatio="xMidYMid meet"
+        preserveAspectRatio="xMidYMid slice"
         style={{
           position: "absolute", inset: 0, width: "100%", height: "100%",
           zIndex: 4, pointerEvents: "none",

@@ -1,11 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import citymapAsset from "@/assets/citymap-v3.jpg.asset.json";
-const citymap = citymapAsset.url;
+import citymap from "@/assets/citymap2.jpg";
 import TaxiTycoon from "@/game/TaxiTycoon";
-import GameMap from "@/game/GameMap";
+import CityTraffic from "@/game/CityTraffic";
+import CityCompetitors from "@/game/CityCompetitors";
+import CityRivalTaxis from "@/game/CityRivalTaxis";
+import ArmoredTruck from "@/game/ArmoredTruck";
 import CityHud from "@/game/CityHud";
+import CrimeEvents from "@/game/CrimeEvents";
+import InterventionDispatcher from "@/game/InterventionDispatcher";
+import EmergencyStations from "@/game/EmergencyStations";
 import RadarFlash from "@/game/RadarFlash";
+// AmbientSirens retiré : plus de bruits d'ambulance/pompiers/police en fond.
 import AdminPanel from "@/game/AdminPanel";
 import RulesPanel from "@/game/RulesPanel";
 import VersionBanner from "@/game/VersionBanner";
@@ -113,11 +119,9 @@ function TaxiTycoonPage() {
         }
         .tt-map {
           position: absolute; inset: 0; width: 100%; height: 100%;
-          object-fit: contain; object-position: center; display: block; z-index: 1;
-          background: #0c0d10;
+          object-fit: cover; display: block; z-index: 1;
           filter: saturate(1.05) brightness(0.95);
         }
-
         .tt-vignette {
           position: absolute; inset: 0; z-index: 2; pointer-events: none;
           background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
@@ -163,8 +167,14 @@ function TaxiTycoonPage() {
       >
         <img src={citymap} alt="Plan de la ville pour le jeu de taxi" className="tt-map" />
         <div className="tt-vignette" />
-        <GameMap />
+        <CityTraffic />
+        <CityCompetitors />
+        <CityRivalTaxis />
+        <EmergencyStations />
+        <CrimeEvents />
+        <InterventionDispatcher />
         <TaxiTycoon />
+        <ArmoredTruck />
       </div>
 
       {/* HUD et panneaux hors zoom (toujours nets) */}
