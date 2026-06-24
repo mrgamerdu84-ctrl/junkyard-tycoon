@@ -282,6 +282,7 @@ export function setAssetOverride(key: AssetKey, url: string | null) {
     GAME_ASSETS[key] = url;
   }
   window.localStorage.setItem(OVERRIDE_KEY, JSON.stringify(current));
+  try { window.dispatchEvent(new Event("jce.assetOverrides.changed")); } catch { /* noop */ }
 }
 
 export function listAssetKeys(): AssetKey[] {

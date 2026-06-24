@@ -208,7 +208,7 @@ function MentionsLegalesPage() {
           </p>
 
           <div className="ml-foot">
-            Dernière mise à jour&nbsp;: juin 2026 — My Taxi World Tycoon
+            © 2026 My Taxi World Rivalité — Tous droits réservés.
           </div>
         </div>
       </div>
