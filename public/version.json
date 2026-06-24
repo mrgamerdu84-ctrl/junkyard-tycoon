@@ -1,6 +1,6 @@
 {
-  "version": "1.0.8",
-  "buildId": "2026-06-24T16:30:00.000Z",
-  "builtAt": 1782319800000,
-  "changelog": "Cadrage carte corrigé : image entière visible (object-fit: contain), calques véhicules/piétons alignés en xMidYMid meet — plus de voitures qui roulent sur les bâtiments."
+  "version": "1.0.0",
+  "buildId": "2026-06-24T14:37:26.428Z",
+  "builtAt": 1782311846428,
+  "changelog": "Mise à jour automatique active"
 }
