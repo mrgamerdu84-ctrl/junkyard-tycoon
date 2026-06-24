@@ -63,6 +63,12 @@ function buildSpecs(comps: Competitor[], pathCount: number): RivalSpec[] {
 
 
 export default function CityRivalTaxis() {
+  const admin = useAdminConfig();
+  const dynamicPaths = useMemo(() => {
+    const d = circuitToSvgPath(admin.circuitPoints);
+    return d ? [d] : [];
+  }, [admin.circuitPoints]);
+
   const [comps, setComps] = useState<Competitor[]>(() => {
     const w = window as unknown as { __jceCompetitors?: Competitor[] };
     return w.__jceCompetitors ?? [];
@@ -77,7 +83,7 @@ export default function CityRivalTaxis() {
     return () => window.removeEventListener("jce:competitors-changed", onChange as EventListener);
   }, []);
 
-  const specs = useMemo(() => buildSpecs(comps), [comps]);
+  const specs = useMemo(() => buildSpecs(comps, dynamicPaths.length), [comps, dynamicPaths.length]);
 
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const carRefs = useRef<(SVGGElement | null)[]>([]);
@@ -89,8 +95,10 @@ export default function CityRivalTaxis() {
 
   useEffect(() => {
     const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
-    if (lens.some((l) => l <= 1)) return;
-    const pickPath = () => RIVAL_ROAD_IDX[Math.floor(Math.random() * RIVAL_ROAD_IDX.length)] ?? 0;
+    if (lens.length === 0 || lens.some((l) => l <= 1)) return;
+    const pathCount = pathRefs.current.length;
+    const pickPath = () => Math.floor(Math.random() * pathCount);
+
     const now0 = performance.now();
     roamRef.current = specs.map((sp) => ({
       pathIdx: sp.pathIdx,
