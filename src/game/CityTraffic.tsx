@@ -432,11 +432,18 @@ export default function CityTraffic() {
     window.addEventListener("jce.customVehicles.changed", onChange);
     return () => window.removeEventListener("jce.customVehicles.changed", onChange);
   }, []);
+  // Réseau de routes dynamique : un seul path = le circuit dessiné par le
+  // joueur dans le panel admin. Pas de circuit (< 2 points) → aucun trafic.
+  const dynamicPaths = useMemo(() => {
+    const d = circuitToSvgPath(admin.circuitPoints);
+    return d ? [d] : [];
+  }, [admin.circuitPoints]);
   // Trafic = uniquement véhicules uploadés par le joueur (catégories roulantes).
   // Le slider "Véhicules civils" du panel admin sert de plafond (0 = aucun, max = tous).
-  const allCustomCars = buildCarsFromCustom(admin.civilVehicleCount);
+  const allCustomCars = buildCarsFromCustom(dynamicPaths.length, admin.civilVehicleCount);
   void customTick;
   const activeCars = allCustomCars;
+
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const carNodes = useRef<(SVGGElement | null)[]>([]);
   const parkPedNodes = useRef<(SVGGElement | null)[]>([]);
