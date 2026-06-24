@@ -13,7 +13,14 @@ const PED_EVT = "jce.customPedestrians.changed";
 const SPRITE_EVT = "jce:armored-sprite-changed";
 const OVERRIDES_EVT = "jce.assetOverrides.changed";
 
-function readLocal() {
+type LocalSnapshot = {
+  custom_vehicles: unknown[];
+  custom_pedestrians: unknown[];
+  armored_sprite: string | null;
+  asset_overrides: Record<string, unknown>;
+};
+
+function readLocal(): LocalSnapshot {
   try {
     return {
       custom_vehicles: JSON.parse(localStorage.getItem(CUSTOM_VEHICLES_KEY) ?? "[]") as unknown[],
