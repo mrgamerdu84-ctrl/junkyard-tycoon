@@ -12,7 +12,7 @@
 // Évents : jce:armored-spawn / jce:armored-resolved
 // =============================================================
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
+import { circuitToSvgPath } from "./circuitPath";
 import { useAdminConfig } from "./adminConfig";
 import armoredTruckAsset from "@/assets/armored-truck.png.asset.json";
 
