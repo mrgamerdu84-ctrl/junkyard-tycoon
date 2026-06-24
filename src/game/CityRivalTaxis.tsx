@@ -33,7 +33,8 @@ type RivalSpec = {
 const LANE_HALF = 9;
 const MAX_RIVALS = 16;
 
-function buildSpecs(comps: Competitor[]): RivalSpec[] {
+function buildSpecs(comps: Competitor[], pathCount: number): RivalSpec[] {
+  if (pathCount <= 0) return [];
   const alive = comps.filter((c) => !c.bankrupt);
   if (alive.length === 0) return [];
   const out: RivalSpec[] = [];
@@ -45,8 +46,8 @@ function buildSpecs(comps: Competitor[]): RivalSpec[] {
       out.push({
         compId: c.id,
         color: c.color,
-        // Distribue les rivaux sur TOUTES les routes du réseau (round-robin).
-        pathIdx: RIVAL_ROAD_IDX[(i * 3 + k) % RIVAL_ROAD_IDX.length] ?? 0,
+        // Un seul circuit pour l'instant → pathIdx = 0.
+        pathIdx: (i * 3 + k) % pathCount,
         flip: ((i + k) % 2) === 1,
         duration: 14 + ((i * 3 + k * 5) % 9),
         offset: ((i * 0.137) + k * 0.41) % 1,
@@ -58,6 +59,7 @@ function buildSpecs(comps: Competitor[]): RivalSpec[] {
   }
   return out;
 }
+
 
 
 export default function CityRivalTaxis() {
