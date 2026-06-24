@@ -2,6 +2,26 @@ import React, { useState, useEffect } from 'react';
 import mapAsset from '@/assets/map_city.png.asset.json';
 import bureauAsset from '@/assets/bureau_patron.png.asset.json';
 
+// --- Customisation taxi (utilisée par ProfileCard) ---
+export interface TaxiPaint { id: string; name: string; color: string; }
+export interface TaxiLivery { id: string; name: string; }
+
+export const TAXI_PAINTS: TaxiPaint[] = [
+  { id: 'yellow', name: 'Jaune Classique', color: '#ffcc00' },
+  { id: 'black', name: 'Noir Limousine', color: '#1a1a1a' },
+  { id: 'white', name: 'Blanc Pur', color: '#f5f5f5' },
+  { id: 'red', name: 'Rouge Sport', color: '#cc2222' },
+  { id: 'blue', name: 'Bleu Nuit', color: '#1e3a8a' },
+];
+
+const LIVERIES: TaxiLivery[] = [
+  { id: 'none', name: 'Sans livrée' },
+  { id: 'stripes', name: 'Rayures Course' },
+  { id: 'checker', name: 'Damier NYC' },
+];
+
+export const getAllLiveries = (): TaxiLivery[] => LIVERIES;
+
 // --- INTERFACES DES ENTITÉS (MANAGEMENT PATRON) ---
 interface Chauffeur {
   id: string;
