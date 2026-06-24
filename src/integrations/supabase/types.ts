@@ -336,6 +336,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_customizations: {
+        Row: {
+          armored_sprite: string | null
+          asset_overrides: Json
+          created_at: string
+          custom_pedestrians: Json
+          custom_vehicles: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          armored_sprite?: string | null
+          asset_overrides?: Json
+          created_at?: string
+          custom_pedestrians?: Json
+          custom_vehicles?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          armored_sprite?: string | null
+          asset_overrides?: Json
+          created_at?: string
+          custom_pedestrians?: Json
+          custom_vehicles?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
