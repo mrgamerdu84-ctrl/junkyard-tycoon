@@ -9,6 +9,7 @@ import CityPremiumDistricts from "@/game/CityPremiumDistricts";
 import CityMissionLayer from "@/game/CityMissionLayer";
 import V2RoadTraffic from "@/game/V2RoadTraffic";
 import TaxiAiLayer from "@/game/TaxiAiLayer";
+import CustomerDemandLayer from "@/game/CustomerDemandLayer";
 import ArmoredTruck from "@/game/ArmoredTruck";
 import CrimeEvents from "@/game/CrimeEvents";
 import InterventionDispatcher from "@/game/InterventionDispatcher";
@@ -97,6 +98,7 @@ function TaxiTycoonPage() {
         <CityMissionLayer />
         <V2RoadTraffic />
         <TaxiAiLayer />
+        <CustomerDemandLayer />
         <div className="tt-vignette" />
         <CityTraffic />
         <CityCompetitors />
