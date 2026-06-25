@@ -9,6 +9,8 @@ export type TaxiAiJob = {
   pickupId: string;
   destinationId: string;
   status: TaxiAiStatus;
+  fare: number;
+  phaseDuration: number;
 };
 
 export function createTaxiJobs(taxiCount = 4): TaxiAiJob[] {
@@ -21,6 +23,8 @@ export function createTaxiJobs(taxiCount = 4): TaxiAiJob[] {
       pickupId: pickup.id,
       destinationId: destination.id,
       status: 'to_client',
+      fare: 18 + index * 7,
+      phaseDuration: 9 + index * 2,
     };
   });
 }
@@ -34,4 +38,19 @@ export function advanceTaxiStatus(status: TaxiAiStatus): TaxiAiStatus {
   if (status === 'to_client') return 'to_destination';
   if (status === 'to_destination') return 'completed';
   return 'idle';
+}
+
+export function getTaxiStatusAt(job: TaxiAiJob, seconds: number): TaxiAiStatus {
+  const step = Math.floor((seconds % (job.phaseDuration * 4)) / job.phaseDuration);
+  if (step === 0) return 'to_client';
+  if (step === 1) return 'to_destination';
+  if (step === 2) return 'completed';
+  return 'idle';
+}
+
+export function taxiStatusLabel(status: TaxiAiStatus) {
+  if (status === 'idle') return 'LIBRE';
+  if (status === 'to_client') return 'CLIENT';
+  if (status === 'to_destination') return 'DEST';
+  return 'PAYÉ';
 }
