@@ -1,92 +1,74 @@
 import { useState } from "react";
 
-const mockDays = [
-  { date: '2026-06-25', label: "Aujourd'hui", score: 12500 },
-  { date: '2026-06-24', label: 'Hier', score: 9800 },
-  { date: '2026-06-23', label: 'Lundi', score: 7400 },
-  { date: '2026-06-22', label: 'Dimanche', score: 5200 },
-  { date: '2026-06-21', label: 'Samedi', score: 3100 },
-  { date: '2026-06-20', label: 'Vendredi', score: 0 },
-  { date: '2026-06-19', label: 'Jeudi', score: 0 },
+const joueurs = [
+  { pos: 1, nom: "Toi", score: 12500, couleur: "text-[#ffd97a]" },
+  { pos: 2, nom: "Marco", score: 9800, couleur: "text-zinc-300" },
+  { pos: 3, nom: "Lina", score: 7400, couleur: "text-[#cd7f32]" },
+  { pos: 4, nom: "Sam", score: 5200, couleur: "text-zinc-400" },
+  { pos: 5, nom: "Alex", score: 3100, couleur: "text-zinc-500" },
 ];
 
-const fmt = (n: number) => Math.round(n).toLocaleString("fr-FR");
-
-const themes = {
-  or: {
-    title: "text-[#e5c158]",
-    border: "border-[#e5c158]",
-    bgActive: "from-[#3a321f] to-[#231e13]",
-    btnFrom: "from-[#ffca3a]",
-    btnTo: "to-[#e0a300]",
-    btnBorder: "border-[#a67c00]",
-  },
-  bleu: {
-    title: "text-[#58b4e5]",
-    border: "border-[#58b4e5]",
-    bgActive: "from-[#1f2f3a] to-[#13232e]",
-    btnFrom: "from-[#3ab4ff]",
-    btnTo: "to-[#0070e0]",
-    btnBorder: "border-[#0050a6]",
-  },
-  vert: {
-    title: "text-[#58e58a]",
-    border: "border-[#58e58a]",
-    bgActive: "from-[#1f3a2a] to-[#13231a]",
-    btnFrom: "from-[#3aff8a]",
-    btnTo: "to-[#00e05a]",
-    btnBorder: "border-[#00a644]",
-  },
-};
-
-export default function LeaderboardPanel({ onClose }: { onClose: () => void }) {
-  const [days] = useState(mockDays);
-  const [theme, setTheme] = useState<'or'|'bleu'|'vert'>('or');
-  const t = themes[theme];
-
-  const unlocked = false;
-  const best = 15200;
-  const playerName = "Aurélien";
-  const ranked = [...days].sort((a, b) => b.score - a.score);
-
-  const cycleTheme = () => setTheme(theme === 'or'? 'bleu' : theme === 'bleu'? 'vert' : 'or');
+export default function LeaderboardPanel({ onClose = () => {} }) {
+  const [selected] = useState(1);
 
   return (
-    <div className="fixed inset-0 z-[10000] bg-black/80 flex items-center justify-center p-4 font-sans">
-      <div className="max-w-[420px] w-full flex flex-col h-[90vh] bg-[#1b1c1e] border-4 border-[#4a3b32] rounded-[24px] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-black/85 flex items-end justify-center">
+      {/* Conteneur principal style jeu */}
+      <div className="w-full max-w-[420px] bg-[#110703] border-t-[6px] border-[#6b4426] rounded-t-[32px] shadow-[0_-20px_50px_rgba(0,0,0,0.9)] overflow-hidden">
 
-        {/* HEADER */}
-        <div className="flex justify-between items-center p-4 border-b border-zinc-800 bg-[#2d2f34]">
-          <h2 className={`${t.title} font-black uppercase tracking-wider text-sm`}>
-            🏆 CLASSEMENT
-          </h2>
-          <div className="flex gap-2">
-            <button onClick={cycleTheme} className="bg-zinc-700 text-white w-7 h-7 rounded-full text-xs flex items-center justify-center">🎨</button>
-            <button onClick={onClose} className="bg-zinc-700 text-white w-7 h-7 rounded-full flex items-center justify-center">×</button>
-          </div>
-        </div>
-
-        {/* LISTE */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gradient-to-b from-zinc-900 to-zinc-950">
-          {ranked.map((d, i) => (
-            <div key={d.date} className={`flex items-center gap-3 p-3 rounded-xl border ${i===0 && d.score>0? `${t.border} bg-gradient-to-r ${t.bgActive}` : 'border-zinc-800 bg-zinc-900'}`}>
-              <div className={`w-6 text-center font-black text-sm ${i===0? t.title : 'text-zinc-500'}`}>#{i+1}</div>
-              <div className={`flex-1 ${t.title} font-bold text-xs uppercase`}>{d.label}<span className="text-zinc-500 ml-2 lowercase text-[10px]">{d.date.slice(5)}</span></div>
-              <div className="text-white font-black text-sm">{fmt(d.score)} $</div>
-            </div>
-          ))}
-
-          <div className="mt-4 p-3 rounded-xl border border-zinc-800 bg-zinc-900/40 flex items-center gap-3">
-            <span className="text-2xl">🔒</span>
+        {/* Barre du haut comme sur ta capture */}
+        <div className="relative h-[52px] bg-gradient-to-b from-[#2a1a0f] to-[#1a0e06] border-b-2 border-black/60 flex items-center justify-between px-4">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-b from-[#5a3c22] to-[#2d1a0c] border-2 border-[#8a5e3a] flex items-center justify-center text-[#ffd97a] font-black">?</div>
             <div>
-              <h4 className={`text-xs font-black ${t.title} uppercase`}>TAXI D'OR</h4>
-              <p className="text-[10px] text-zinc-300">Record : {fmt(best)} $</p>
+              <div className="text-[#f0d9a8] font-black text-[13px] leading-none tracking-wide">CLASSEMENT HEBDO</div>
+              <div className="text-[#8a6b4d] text-[10px]">Jeudi 25 juin • Pertuis</div>
             </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#2a1a0f] border border-[#5a3c22] text-[#f0d9a8]">×</button>
+        </div>
+
+        {/* TABLEAU */}
+        <div className="bg-[url('https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=300')] bg-cover bg-center">
+          <div className="bg-[#0d0602]/85 backdrop-blur-[2px] p-3 max-h-[38vh] overflow-y-auto">
+            {joueurs.map((j) => (
+              <div key={j.pos} className={`mb-2 last:mb-0 flex items-center gap-3 p-[10px] rounded-[14px] border-2 transition-all ${
+                j.pos === selected
+                 ? 'bg-gradient-to-r from-[#3a2414]/90 to-[#1f1208]/90 border-[#d4a85f] shadow-[0_0_15px_rgba(212,168,95,0.3)]'
+                  : 'bg-[#1a0e06]/70 border-[#3a2414] border'
+              }`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-[13px] ${
+                  j.pos===1? 'bg-[#d4a85f] text-black' : j.pos===2? 'bg-zinc-400 text-black' : j.pos===3? 'bg-[#a66a3c] text-black' : 'bg-[#2a1a0f] text-[#8a6b4d] border border-[#3a2414]'
+                }`}>{j.pos}</div>
+                <div className="flex-1">
+                  <div className={`font-bold text-[13px] ${j.couleur}`}>{j.nom}</div>
+                  <div className="h-[4px] w-full bg-black/50 rounded-full mt-1 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#d4a85f] to-[#8a5e3a]" style={{width: `${(j.score/13000)*100}%`}}></div>
+                  </div>
+                </div>
+                <div className="text-[#ffd97a] font-black text-[15px] tracking-wide">{j.score.toLocaleString('fr-FR')} $</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* BAS */}
-        <div className="bg-[#120c08] border-t-2 border-[#4a3b32] p-2 space-y-2">
-          {/* 4 boutons marrons */}
-          <div className="grid grid-cols-4 gap-1.5">
-            <div className="bg-gradient-to-b from-[#3d2a1c] to-[#241
+        {/* LES 4 GROS BOUTONS MARRONS - identiques à ta capture 2 */}
+        <div className="bg-[#0a0502] p-2.5 grid grid-cols-4 gap-2 border-t-2 border-[#2a1a0f]">
+          {[
+            {icon:'🚕', label:'GÉRER', sub:'FLOTTE', info:'990$'},
+            {icon:'🔧', label:'AMÉLIORATIONS', sub:'QG', info:'Niv. 0'},
+            {icon:'📻', label:'RADIO &', sub:'MISSIONS', info:'2 appel(s)', active:true},
+            {icon:'⚔️', label:'RIVALITÉ', sub:'', info:'0 vol.'},
+          ].map((b,i)=>(
+            <button key={i} className={`relative h-[72px] rounded-[16px] border-[3px] ${b.active?'border-[#d4a85f]':'border-[#3a2414]'} bg-gradient-to-b from-[#5e3f25] to-[#28160a] shadow-[inset_0_2px_0_rgba(255,255,255,0.08),inset_0_-3px_0_rgba(0,0,0,0.6),0_4px_8px_rgba(0,0,0,0.7)] active:translate-y-[1px] flex flex-col items-center justify-center`}>
+              <span className="text-[22px] leading-none drop-shadow-[0_2px_0_black]">{b.icon}</span>
+              <span className="text-[#f0d9a8] font-black text-[10px] leading-[11px] mt-1 tracking-wide text-center">{b.label}<br/>{b.sub}</span>
+              <span className={`text-[9px] mt-0.5 ${b.active?'text-[#ffd97a]':'text-[#8a6b4d]'}`}>{b.info}</span>
+              {b.active && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#d4a85f] rounded-full animate-pulse"></div>}
+            </button>
+          ))}
+        </div>
+
+        {/* PANNEAU BOIS DU BAS - comme sur ta capture */}
+        <div className="bg-[#160a03] p-2.5 border-t-[3px] border-black">
+          <div class
