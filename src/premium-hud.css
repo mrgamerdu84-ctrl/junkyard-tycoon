@@ -1,0 +1,194 @@
+/* Premium HUD theme layer for My Taxi World Rivalité. Overrides HUD visuals only. */
+.tt-root {
+  --tt-panel: linear-gradient(180deg, rgba(61,40,20,.98), rgba(26,12,4,.98));
+  --tt-button: linear-gradient(180deg, rgba(90,63,37,.98), rgba(40,21,10,.98));
+  --tt-border: #5a3a1f;
+  --tt-border-dark: #3d2814;
+  --tt-text: #f0d9b5;
+  --tt-muted: #8a6b4a;
+  --tt-deep-shadow: 0 7px 18px rgba(0,0,0,.72);
+  --tt-inset-shine: inset 0 2px 0 rgba(255,255,255,.09);
+}
+
+.tt-theme-picker {
+  min-height: 38px !important;
+  padding: 7px 10px !important;
+  border: 3px solid var(--tt-border) !important;
+  background: var(--tt-panel) !important;
+  box-shadow: var(--tt-inset-shine), var(--tt-deep-shadow), 0 0 18px var(--tt-accent-glow) !important;
+}
+.tt-theme-picker::before { content: "🎨"; filter: drop-shadow(0 2px 2px #000); }
+.tt-theme-label { color: var(--tt-text) !important; text-shadow: 0 2px 2px #000; }
+.tt-theme-dot { transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease; }
+.tt-theme-dot:active { transform: scale(.9); }
+.tt-theme-dot.active { border-color: var(--tt-accent) !important; box-shadow: 0 0 0 2px rgba(0,0,0,.7), 0 0 16px var(--tt-accent-glow) !important; }
+
+.tt-console {
+  left: 50% !important;
+  right: auto !important;
+  bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  transform: translateX(-50%) !important;
+  width: min(420px, calc(100vw - 10px)) !important;
+  pointer-events: auto !important;
+  z-index: 70 !important;
+}
+.tt-console-actions {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  padding: 0 6px 6px !important;
+}
+.tt-wood-btn {
+  min-width: 0 !important;
+  height: 88px !important;
+  border-radius: 14px !important;
+  border: 3px solid var(--tt-border-dark) !important;
+  background: var(--tt-button) !important;
+  color: var(--tt-text) !important;
+  box-shadow: var(--tt-inset-shine), 0 4px 8px #000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  padding: 5px 3px !important;
+  transition: transform .08s ease, filter .12s ease, box-shadow .12s ease !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+.tt-wood-btn:hover:not(:disabled) { filter: brightness(1.12) saturate(1.05) !important; }
+.tt-wood-btn:active:not(:disabled) { transform: translateY(1px) scale(.99) !important; }
+.tt-wood-btn:disabled { opacity: .48 !important; filter: grayscale(.45) brightness(.75) !important; }
+.tt-wood-btn:nth-child(3) {
+  border-color: var(--tt-accent) !important;
+  color: var(--tt-accent) !important;
+  box-shadow: var(--tt-inset-shine), 0 0 14px var(--tt-accent-glow), 0 4px 8px #000 !important;
+  position: relative !important;
+}
+.tt-wood-btn:nth-child(3)::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--tt-accent);
+  box-shadow: 0 0 12px var(--tt-accent-glow);
+  animation: ttHudPulse 1.25s ease-in-out infinite;
+}
+.tt-wood-icon { font-size: 22px !important; line-height: 1 !important; filter: drop-shadow(0 2px 2px #000); }
+.tt-wood-btn b { color: currentColor !important; font-size: 10px !important; line-height: 11px !important; font-weight: 950 !important; text-align: center !important; letter-spacing: .15px !important; text-shadow: 0 2px 2px #000 !important; }
+.tt-wood-btn small { color: var(--tt-muted) !important; font-size: 9px !important; font-weight: 800 !important; margin-top: 1px !important; }
+.tt-wood-btn:nth-child(3) small { color: var(--tt-accent) !important; }
+
+.tt-director-band {
+  margin: 0 6px 6px !important;
+  padding: 10px !important;
+  border-radius: 18px !important;
+  border: 3px solid var(--tt-border) !important;
+  background: var(--tt-panel) !important;
+  box-shadow: var(--tt-inset-shine), var(--tt-deep-shadow) !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  gap: 8px !important;
+}
+.tt-director-profile, .tt-trophy, .tt-book {
+  min-width: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--tt-text) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  text-align: center !important;
+}
+.tt-avatar-anon {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 999px !important;
+  background: #1a0c04 !important;
+  border: 2px solid var(--tt-border) !important;
+  color: var(--tt-muted) !important;
+  display: grid !important;
+  place-items: center !important;
+  font-weight: 950 !important;
+}
+.tt-director-profile b, .tt-director-profile i, .tt-trophy small, .tt-book small { color: var(--tt-text) !important; font-size: 9px !important; line-height: 10px !important; text-shadow: 0 2px 2px #000 !important; }
+.tt-trophy { color: var(--tt-accent) !important; font-size: 24px !important; }
+.tt-trophy small { color: var(--tt-accent) !important; font-weight: 950 !important; }
+.tt-book {
+  position: relative !important;
+  font-size: 8px !important;
+  font-weight: 950 !important;
+  color: #0a0a0a !important;
+}
+.tt-book::before {
+  content: "TUTO";
+  width: 28px;
+  height: 36px;
+  border-radius: 4px;
+  border: 2px solid var(--tt-border-dark);
+  background: var(--tt-border);
+  display: grid;
+  place-items: center;
+  color: #070707;
+  font-size: 8px;
+  font-weight: 950;
+  box-shadow: 0 3px 8px #000;
+}
+
+.tt-lower-tools {
+  margin: 0 6px 6px !important;
+  display: grid !important;
+  grid-template-columns: 1fr 44px 1fr !important;
+  gap: 7px !important;
+}
+.tt-apk, .tt-pen, .tt-special-inline {
+  border-radius: 12px !important;
+  border: 2px solid var(--tt-border) !important;
+  background: var(--tt-button) !important;
+  color: var(--tt-text) !important;
+  box-shadow: var(--tt-inset-shine), 0 4px 8px #000 !important;
+  font-weight: 950 !important;
+}
+.tt-special-inline { color: var(--tt-accent) !important; border-color: var(--tt-accent) !important; box-shadow: var(--tt-inset-shine), 0 0 12px var(--tt-accent-glow), 0 4px 8px #000 !important; }
+
+.tt-missions-panel, .tt-shop, .tt-garage, .tt-leaderboard, .tt-dialog, .tt-modal {
+  background: var(--tt-panel) !important;
+  border-color: var(--tt-border) !important;
+  color: var(--tt-text) !important;
+  box-shadow: var(--tt-deep-shadow), 0 0 18px var(--tt-accent-glow) !important;
+}
+.tt-missions-head, .tt-shop-head { border-color: var(--tt-border) !important; }
+.tt-missions-head h3, .tt-shop-head h2, .tt-depot-name { color: var(--tt-accent) !important; text-shadow: 0 2px 2px #000; }
+.tt-missions-tab.active { color: var(--tt-accent) !important; border-color: var(--tt-accent) !important; box-shadow: 0 0 12px var(--tt-accent-glow) !important; }
+.tt-contract, .tt-depot-stat-row, .tt-depot-card-inline { background: rgba(10, 7, 5, .55) !important; border-color: color-mix(in srgb, var(--tt-border) 80%, white 10%) !important; color: var(--tt-text) !important; }
+.tt-c-time-fill { background: linear-gradient(90deg, var(--tt-accent), var(--tt-accent)) !important; }
+.tt-c-accept { background: linear-gradient(180deg, var(--tt-accent), #2b1a05) !important; color: #1a0c04 !important; border-color: var(--tt-border-dark) !important; font-weight: 950 !important; }
+
+.tt-info-card, .tt-weather-pill, .tt-mission-wood, .tt-save-blink {
+  background: var(--tt-panel) !important;
+  border-color: var(--tt-border) !important;
+  color: var(--tt-text) !important;
+  box-shadow: var(--tt-inset-shine), var(--tt-deep-shadow) !important;
+}
+.tt-mission-wood, .tt-coin { color: var(--tt-accent) !important; border-color: var(--tt-accent) !important; }
+
+@keyframes ttHudPulse { 0%,100%{ opacity:.55; transform:scale(.9);} 50%{ opacity:1; transform:scale(1.2);} }
+
+@media (max-width: 520px) {
+  .tt-console { width: min(420px, calc(100vw - 4px)) !important; }
+  .tt-console-actions { gap: 5px !important; padding-inline: 4px !important; }
+  .tt-wood-btn { height: 86px !important; }
+  .tt-lower-tools { display: none !important; }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .tt-console { width: min(520px, calc(100vw - 130px)) !important; left: 50% !important; bottom: 5px !important; }
+  .tt-wood-btn { height: 68px !important; }
+  .tt-director-band { display: none !important; }
+  .tt-lower-tools { display: none !important; }
+}
