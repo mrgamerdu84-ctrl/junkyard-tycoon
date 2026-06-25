@@ -111,7 +111,7 @@ export default function LeaderboardPanel({ onClose }: { onClose: () => void }) {
             <div className="text-center flex flex-col items-center border-l border-r border-amber-900/30">
               <span className="text-sm">🏆</span>
               <span className="text-[8px] font-black text-[#e5c158] leading-tight">CLASSEMENT<br/>MONDIAL</span>
-              <span className="text-[8px] text-white font-bold mt-0.5">{fmt(todayScore)} $</span>
+              <span className="text-[8px] text-white font-bold mt-0.5">{fmt(todayScore)} ¢</span>
             </div>
             {/* Tuto */}
             <div className="text-center flex flex-col items-center">
