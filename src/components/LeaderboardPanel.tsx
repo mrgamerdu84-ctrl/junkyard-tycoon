@@ -106,4 +106,65 @@ export default function LeaderboardPanel({ onClose }: { onClose: () => void }) {
                 <div className="text-white font-black text-sm">{fmt(d.score)} $</div>
               </div>
             ))}
-          </
+          </div>
+
+          {/* TAXI D'OR */}
+          <div className={`mt-4 p-3 rounded-xl flex items-center gap-3 border ${unlocked? "border-amber-600 bg-amber-950/20" : "border-zinc-800 bg-zinc-900/40 opacity-60"}`}>
+            <span className="text-2xl">{unlocked? "🚖" : "🔒"}</span>
+            <div>
+              <h4 className={`text-xs font-black ${t.title} m-0 uppercase`}>TAXI D'OR</h4>
+              <p className="text-[10px] text-zinc-300 m-0 mt-0.5">
+                {unlocked? `Débloqué! Record : ${fmt(best)} $.` : "Termine 1er de la semaine pour l'obtenir."}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* BAS */}
+        <div className="bg-[#120c08] border-t-2 border-[#4a3b32] p-2 space-y-2">
+          {/* 4 boutons marrons */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {[
+              {i:"🚖",t:"GÉRER FLOTTE",s:"990$"},
+              {i:"🔧",t:"AMÉLIORATIONS QG",s:"Niv. 0"},
+              {i:"📻",t:"RADIO & MISSIONS",s:"2 appel(s)",active:true},
+              {i:"⚔️",t:"RIVALITÉ",s:"0 vol."},
+            ].map((b,idx)=>(
+              <div key={idx} className={`bg-gradient-to-b from-[#3d2a1c] to-[#24170e] border ${b.active? t.border+' border-2 animate-pulse':'border-[#5c422f]'} rounded-lg p-1.5 text-center shadow-md`}>
+                <div className="text-xs">{b.i}</div>
+                <div className={`text-[8px] font-black ${t.title} mt-0.5 leading-none`}>{b.t}</div>
+                <div className={`text-[7px] ${b.active?'text-amber-400':'text-zinc-500'}`}>{b.s}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* RADIO PLAYER */}
+          <div className="flex justify-center -my-1">
+            <div className="bg-[#0a0f1c] border border-[#e5c158]/40 rounded-full px-2 py-1 flex items-center gap-1.5 shadow-lg">
+              <button className="w-6 h-6 rounded-full bg-gradient-to-b from-[#a31616] to-[#7a0e0e] border border-[#5a0a0a] flex items-center justify-center"><span className="text-white text-[10px]">⏮</span></button>
+              <button className="w-6 h-6 rounded-full bg-gradient-to-b from-[#ffca3a] to-[#e0a300] border border-[#a67c00] flex items-center justify-center"><span className="text-black text-[10px]">⏸</span></button>
+              <button className="w-6 h-6 rounded-full bg-gradient-to-b from-[#a31616] to-[#7a0e0e] border border-[#5a0a0a] flex items-center justify-center"><span className="text-white text-[10px]">⏭</span></button>
+              <div className="flex items-center gap-1 pl-1"><span className="text-[10px]">🎤</span><span className="text-[10px] text-[#e5c158] font-bold">Radio Pop</span></div>
+            </div>
+          </div>
+
+          {/* Boutons qui changent de couleur */}
+          <div className="bg-[#2b1d14] border border-[#5c422f] rounded-xl p-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                {icon:"👤",label:playerName},
+                {icon:"🏆",label:"CLASSEMENT"},
+                {icon:"📖",label:"TUTO"},
+              ].map((b)=>(
+                <button key={b.label} className={`bg-gradient-to-b ${t.btnFrom} ${t.btnTo} text-black border-2 ${t.btnBorder} rounded-lg py-1.5 ${t.shadow} active:translate-y-0.5 flex flex-col items-center`}>
+                  <span className="text-sm leading-none">{b.icon}</span>
+                  <span className="text-[8px] font-black uppercase mt-0.5 truncate w-11/12">{b.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
