@@ -1,4 +1,4 @@
-{/* INTERFACE JEU - À COLLER TEL QUEL */}
+
 <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
   <div className="max-w-[420px] mx-auto pointer-events-auto">
 
