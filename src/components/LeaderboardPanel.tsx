@@ -3,6 +3,7 @@ type LeaderboardPanelProps = {
   onClose?: () => void;
 };
 
+// Keep this component as a default export: TaxiTycoon and HomeScreen import it that way.
 export default function LeaderboardPanel({ open = true, onClose }: LeaderboardPanelProps) {
   if (!open) return null;
 
