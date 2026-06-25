@@ -54,3 +54,12 @@ export function taxiStatusLabel(status: TaxiAiStatus) {
   if (status === 'to_destination') return 'DEST';
   return 'PAYÉ';
 }
+
+export function getTaxiAiEarningsSummary(jobs: TaxiAiJob[], seconds: number) {
+  const completedJobs = jobs.filter((job, index) => getTaxiStatusAt(job, seconds + index * 1.5) === 'completed');
+  return {
+    completed: completedJobs.length,
+    totalFare: completedJobs.reduce((sum, job) => sum + job.fare, 0),
+    active: jobs.length - completedJobs.length,
+  };
+}
