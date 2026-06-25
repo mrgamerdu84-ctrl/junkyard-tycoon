@@ -3,6 +3,8 @@ import { getLast7Days, isSpecialTaxiUnlocked, getBestWeekScore, getTodayScore, g
 import { useAuth } from "@/lib/useAuth";
 import goldTaxi from "@/assets/taxi-gold.png.asset.json";
 
+const fmt = (n: number) => Math.round(n).toLocaleString("fr-FR");
+
 export default function LeaderboardPanel({ onClose }: { onClose: () => void }) {
   const { user, pseudo: cloudPseudo } = useAuth();
   const [days, setDays] = useState(() => getLast7Days());
@@ -22,77 +24,61 @@ export default function LeaderboardPanel({ onClose }: { onClose: () => void }) {
   const todayScore = user ? (days.find((d) => d.date === todayKey)?.score ?? 0) : getTodayScore();
 
   return (
-    <div className="lb-root">
-      <style>{`
-        /* Fond semi-transparent pour laisser voir la carte derrière */
-        .lb-root { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 16px; font-family: system-ui, sans-serif; }
-        
-        /* Conteneur calqué sur la taille de l'écran de jeu */
-        .lb-card { max-width: 420px; width: 100%; display: flex; flex-direction: column; gap: 12px; padding: 10px; }
-        
-        /* Style de base des gros boutons arrondis */
-        .btn-menu { width: 100%; font-weight: 900; font-size: 16px; text-transform: uppercase; tracking-wider: 1px; padding: 16px; border-radius: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; border: 2px solid rgba(0,0,0,0.2); box-shadow: 0 4px 0px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.3); transition: transform 0.05s, box-shadow 0.05s; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
-        .btn-menu:active { transform: translateY(3px); box-shadow: 0 1px 0px rgba(0,0,0,0.3); }
-
-        /* Couleurs exactes des boutons de l'image */
-        .btn-yellow { background: linear-gradient(180deg, #fcd34d 0%, #f59e0b 100%); color: #1e1b4b; border-color: #d97706; }
-        .btn-red { background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%); color: #fff; border-color: #991b1b; }
-        .btn-blue { background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%); color: #fff; border-color: #1e40af; }
-        .btn-gray { background: linear-gradient(180deg, #4b5563 0%, #374151 100%); color: #fff; border-color: #1f2937; }
-
-        /* Notification de mise à jour en haut */
-        .update-banner { background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%); border-radius: 20px; padding: 14px; position: relative; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; justify-content: space-between; items-center; }
-        .update-btn { background: white; color: #d97706; font-size: 11px; font-weight: 900; padding: 6px 12px; border-radius: 9999px; border: none; cursor: pointer; shadow: 0 2px 4px rgba(0,0,0,0.2); }
-      `}</style>
+    <div className="fixed inset-0 z-[10000] bg-black/60 flex items-center justify-center p-4 font-sans">
       
-      <div className="lb-card">
+      <div className="max-w-[420px] w-full flex flex-col gap-3 p-3">
         
-        {/* Banner "Nouvelle mise à jour" si présente en haut (image 1000024755.jpg) */}
-        <div className="update-banner">
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: '900' }}>✨ Nouvelle mise à jour !</div>
-            <div style={{ fontSize: '10px', opacity: 0.9 }}>Version 1.0.0 disponible...</div>
+        {/* Bannière "Nouvelle mise à jour" */}
+        <div className="bg-gradient-to-b from-amber-400 to-amber-600 rounded-[20px] p-4 flex justify-between items-center color-white shadow-lg border border-amber-500">
+          <div className="text-white">
+            <div className="text-sm font-black">✨ Nouvelle mise à jour !</div>
+            <div className="text-[10px] opacity-90">Version 1.0.0 disponible...</div>
           </div>
-          <button className="update-btn">Mettre à jour</button>
+          <button className="bg-white text-amber-600 text-[11px] font-black px-3 py-1.5 rounded-full shadow-md active:scale-95 transition-transform">
+            Mettre à jour
+          </button>
         </div>
 
         {/* 1. Bouton JOUER */}
-        <button className="btn-menu btn-yellow" onClick={onClose}>
+        <button 
+          onClick={onClose}
+          className="w-full font-black text-base uppercase tracking-wider p-4 rounded-[20px] flex items-center justify-center gap-2 border-2 border-amber-600 bg-gradient-to-b from-amber-300 to-amber-500 text-indigo-950 shadow-[0_4px_0px_#b45309,inset_0_2px_4px_rgba(255,255,255,0.3)] active:translate-y-[3px] active:shadow-[0_1px_0px_#b45309] transition-all"
+        >
           <span>JOUER ▶</span>
         </button>
 
         {/* 2. Bouton ARÈNE MONDIALE */}
-        <button className="btn-menu btn-red">
+        <button className="w-full font-black text-base uppercase tracking-wider p-4 rounded-[20px] flex items-center justify-center gap-2 border-2 border-red-800 bg-gradient-to-b from-red-400 to-red-700 text-white shadow-[0_4px_0px_#991b1b,inset_0_2px_4px_rgba(255,255,255,0.3)] active:translate-y-[3px] active:shadow-[0_1px_0px_#991b1b] transition-all">
           <span>⚔️ ARÈNE MONDIALE</span>
         </button>
 
-        {/* 3. Bouton CLASSEMENT (Affiche ton score actuel du jour dessus) */}
-        <button className="btn-menu btn-yellow">
+        {/* 3. Bouton CLASSEMENT */}
+        <button className="w-full font-black text-base uppercase tracking-wider p-4 rounded-[20px] flex items-center justify-center gap-2 border-2 border-amber-600 bg-gradient-to-b from-amber-300 to-amber-500 text-indigo-950 shadow-[0_4px_0px_#b45309,inset_0_2px_4px_rgba(255,255,255,0.3)] active:translate-y-[3px] active:shadow-[0_1px_0px_#b45309] transition-all">
           <span>🏆 CLASSEMENT ({fmt(todayScore)} $)</span>
         </button>
 
-        {/* 4. Bouton TUTO (Lié au statut de ton Taxi d'or) */}
-        <button className="btn-menu btn-yellow">
+        {/* 4. Bouton TUTO */}
+        <button className="w-full font-black text-base uppercase tracking-wider p-4 rounded-[20px] flex items-center justify-center gap-2 border-2 border-amber-600 bg-gradient-to-b from-amber-300 to-amber-500 text-indigo-950 shadow-[0_4px_0px_#b45309,inset_0_2px_4px_rgba(255,255,255,0.3)] active:translate-y-[3px] active:shadow-[0_1px_0px_#b45309] transition-all">
           <span>📖 TUTO {unlocked ? "✅" : "🔒"}</span>
         </button>
 
         {/* 5. Bouton PSEUDO */}
-        <button className="btn-menu btn-yellow">
+        <button className="w-full font-black text-base uppercase tracking-wider p-4 rounded-[20px] flex items-center justify-center gap-2 border-2 border-amber-600 bg-gradient-to-b from-amber-300 to-amber-500 text-indigo-950 shadow-[0_4px_0px_#b45309,inset_0_2px_4px_rgba(255,255,255,0.3)] active:translate-y-[3px] active:shadow-[0_1px_0px_#b45309] transition-all">
           <span>✏️ PSEUDO : {playerName}</span>
         </button>
 
         {/* 6. Bouton MON PROFIL */}
-        <button className="btn-menu btn-blue">
+        <button className="w-full font-black text-base uppercase tracking-wider p-4 rounded-[20px] flex items-center justify-center gap-2 border-2 border-blue-800 bg-gradient-to-b from-blue-400 to-blue-700 text-white shadow-[0_4px_0px_#1e40af,inset_0_2px_4px_rgba(255,255,255,0.3)] active:translate-y-[3px] active:shadow-[0_1px_0px_#1e40af] transition-all">
           <span>🪪 MON PROFIL</span>
         </button>
 
         {/* 7. Bouton DÉCONNEXION */}
-        <button className="btn-menu btn-gray">
+        <button className="w-full font-black text-base uppercase tracking-wider p-4 rounded-[20px] flex items-center justify-center gap-2 border-2 border-zinc-700 bg-gradient-to-b from-zinc-500 to-zinc-600 text-white shadow-[0_4px_0px_#1f2937,inset_0_2px_4px_rgba(255,255,255,0.3)] active:translate-y-[3px] active:shadow-[0_1px_0px_#1f2937] transition-all">
           <span>🚪 DÉCONNEXION</span>
         </button>
 
         {/* 8. Bouton TÉLÉCHARGER L'APK */}
-        <button className="btn-menu btn-yellow" style={{ marginTop: '10px' }}>
+        <button className="w-full font-black text-base uppercase tracking-wider p-4 rounded-[20px] flex items-center justify-center gap-2 border-2 border-amber-600 bg-gradient-to-b from-amber-300 to-amber-500 text-indigo-950 shadow-[0_4px_0px_#b45309,inset_0_2px_4px_rgba(255,255,255,0.3)] active:translate-y-[3px] active:shadow-[0_1px_0px_#b45309] transition-all mt-2">
           <span>🤖 TÉLÉCHARGER L'APK</span>
         </button>
 
