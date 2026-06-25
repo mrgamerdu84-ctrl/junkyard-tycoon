@@ -1,64 +1,53 @@
-import React, { useState } from "react";
+{/* INTERFACE JEU - À COLLER TEL QUEL */}
+<div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+  <div className="max-w-[420px] mx-auto pointer-events-auto">
 
-const joueurs = [
-  { pos: 1, nom: "Toi", score: 12500 },
-  { pos: 2, nom: "Marco", score: 9800 },
-  { pos: 3, nom: "Lina", score: 7400 },
-  { pos: 4, nom: "Sam", score: 5200 },
-  { pos: 5, nom: "Alex", score: 3100 },
-];
+    {/* 4 GROS BOUTONS */}
+    <div className="grid grid-cols-4 gap-1.5 px-2 pb-2">
+      <button className="h-[88px] rounded-[14px] border-[3px] border-[#3d2814] bg-gradient-to-b from-[#5a3f25] to-[#28150a] shadow-[inset_0_2px_0_rgba(255,255,255,0.08),0_4px_8px_#000] active:translate-y-[1px] flex flex-col items-center justify-center">
+        <span className="text-[22px] leading-none">🚕</span>
+        <span className="text-[#f0d9b5] font-black text-[10px] leading-[11px] mt-1 text-center">GÉRER<br/>FLOTTE</span>
+        <span className="text-[#8a6b4a] text-[9px] mt-0.5">990$</span>
+      </button>
 
-export default function LeaderboardPanel({ onClose = () => {} }) {
-  const [list] = useState(joueurs);
+      <button className="h-[88px] rounded-[14px] border-[3px] border-[#3d2814] bg-gradient-to-b from-[#5a3f25] to-[#28150a] shadow-[inset_0_2px_0_rgba(255,255,255,0.08),0_4px_8px_#000] active:translate-y-[1px] flex flex-col items-center justify-center">
+        <span className="text-[22px] leading-none">🔧</span>
+        <span className="text-[#f0d9b5] font-black text-[10px] leading-[11px] mt-1 text-center">AMÉLIORATIONS<br/>QG</span>
+        <span className="text-[#8a6b4a] text-[9px] mt-0.5">Niv. 0</span>
+      </button>
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-end justify-center sm:items-center">
-      <div className="w-full max-w-[420px] bg-[#0b0400] sm:rounded-[28px] rounded-t-[28px] border-t-[5px] sm:border-[5px] border-[#7a4e2a] shadow-2xl overflow-hidden">
+      <button className="h-[88px] rounded-[14px] border-[3px] border-[#d4a85f] bg-gradient-to-b from-[#5a3f25] to-[#28150a] shadow-[inset_0_2px_0_rgba(255,255,255,0.12),0_0_12px_rgba(212,168,95,0.3)] active:translate-y-[1px] flex flex-col items-center justify-center relative">
+        <span className="text-[22px] leading-none">📻</span>
+        <span className="text-[#ffd97a] font-black text-[10px] leading-[11px] mt-1 text-center">RADIO &<br/>MISSIONS</span>
+        <span className="text-[#ffd97a] text-[9px] mt-0.5">2 appel(s)</span>
+        <span className="absolute -top-1 -right-1 w-2 h-2 bg-[#ffd97a] rounded-full animate-pulse"></span>
+      </button>
 
-        {/* HEADER */}
-        <div className="h-16 bg-gradient-to-b from-[#2e1a0c] to-[#1a0c04] border-b-2 border-black px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-b from-[#5c3a1f] to-[#281408] border-2 border-[#8c5e36] flex items-center justify-center text-[#ffda8a] font-bold">?</div>
-            <div>
-              <p className="text-[#f5e0b7] font-black text-sm tracking-wider leading-none">CLASSEMENT HEBDO</p>
-              <p className="text-[#8c6b4a] text-xs">Jeudi 25 juin • Pertuis</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#1a0c04] border border-[#5c3a1f] text-[#f5e0b7]">×</button>
+      <button className="h-[88px] rounded-[14px] border-[3px] border-[#3d2814] bg-gradient-to-b from-[#5a3f25] to-[#28150a] shadow-[inset_0_2px_0_rgba(255,255,255,0.08),0_4px_8px_#000] active:translate-y-[1px] flex flex-col items-center justify-center">
+        <span className="text-[22px] leading-none">⚔️</span>
+        <span className="text-[#f0d9b5] font-black text-[10px] leading-[11px] mt-1 text-center">RIVALITÉ</span>
+        <span className="text-[#8a6b4a] text-[9px] mt-0.5">0 vol.</span>
+      </button>
+    </div>
+
+    {/* PANNEAU BOIS DU BAS */}
+    <div className="mx-2 mb-2 p-2.5 rounded-[18px] border-[3px] border-[#5a3a1f] bg-gradient-to-b from-[#3d2814] to-[#1a0c04] shadow-[inset_0_2px_0_rgba(255,255,255,0.05)]">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 rounded-full bg-[#1a0c04] border-2 border-[#5a3a1f] flex items-center justify-center text-[#6b4f31]">?</div>
+          <p className="text-[#f0d9b5] font-bold text-[10px] mt-1">[NOM]</p>
         </div>
-
-        {/* LISTE */}
-        <div className="bg-[#140903] p-3 max-h-[260px] overflow-y-auto">
-          <div className="space-y-2">
-            {list.map((j) => (
-              <div key={j.pos} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 ${j.pos===1? "bg-gradient-to-r from-[#3b2512] to-[#1f1308] border-[#d4a85f]" : "bg-[#1a0e05] border-[#3a2412]"}`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-sm ${j.pos===1?"bg-[#d4a85f] text-black":j.pos===2?"bg-zinc-300 text-black":j.pos===3?"bg-[#a06a3d] text-black":"bg-[#24140a] text-[#8c6b4a]"}`}>{j.pos}</div>
-                <div className="flex-1">
-                  <p className={`font-bold text-sm ${j.pos===1?"text-[#ffd97a]":"text-[#e8d0a8]"}`}>{j.nom}</p>
-                  <div className="w-full h-1.5 bg-black/60 rounded-full mt-1"><div className="h-full bg-[#d4a85f] rounded-full" style={{width:`${j.score/130}%`}}/></div>
-                </div>
-                <p className="text-[#ffd97a] font-black text-sm">{j.score.toLocaleString('fr-FR')} $</p>
-              </div>
-            ))}
-          </div>
+        <button className="flex flex-col items-center justify-center">
+          <span className="text-[24px] leading-none">🏆</span>
+          <span className="text-[#ffd97a] font-black text-[10px] leading-[11px] mt-1">CLASSEMENT<br/>MONDIAL</span>
+        </button>
+        <div className="flex flex-col items-center relative">
+          <div className="w-7 h-9 bg-[#5a3a1f] border-2 border-[#3d2814] rounded-[4px] flex items-center justify-center text-[8px] font-black text-black">TUTO</div>
+          <span className="text-[#f0d9b5] text-[9px] mt-1">CONT & MAN</span>
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#1a0c04] border-2 border-[#d4a85f] flex items-center justify-center text-[12px]">⚙️</div>
         </div>
+      </div>
+    </div>
 
-        {/* 4 BOUTONS */}
-        <div className="grid grid-cols-4 gap-2 p-2.5 bg-[#080200] border-t-2 border-[#1a0c04]">
-          {[
-            {i:"🚕",l1:"GÉRER",l2:"FLOTTE",s:"990$"},
-            {i:"🔧",l1:"AMÉLIORATIONS",l2:"QG",s:"Niv.0"},
-            {i:"📻",l1:"RADIO &",l2:"MISSIONS",s:"2 appel(s)",a:true},
-            {i:"⚔️",l1:"RIVALITÉ",l2:"",s:"0 vol."},
-          ].map((b,i)=>(
-            <div key={i} className={`h-[78px] rounded-xl border-[3px] ${b.a?"border-[#d4a85f]":"border-[#3a2412]"} bg-gradient-to-b from-[#5a3a21] to-[#241207] flex flex-col items-center justify-center shadow-lg`}>
-              <span className="text-lg">{b.i}</span>
-              <span className="text-[#f5e0b7] font-black text-[10px] leading-tight text-center mt-1">{b.l1}<br/>{b.l2}</span>
-              <span className={`text-[9px] ${b.a?"text-[#ffd97a]":"text-[#8c6b4a]"}`}>{b.s}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* PANNEAU BOIS */}
-        <div className="bg-[#0f0601] p-2.5 border-t-2 border-black">
-          <div className="bg-gradient-to-b from-[#3e2814] to-[#1a0
+  </div>
+</div>
