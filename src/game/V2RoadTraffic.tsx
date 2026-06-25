@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getInitialVehiclePaths } from "./VehicleNavigator";
+import { getBranchingVehiclePaths } from "./VehicleNavigator";
 
 type Point = { x: number; y: number };
 
@@ -41,7 +41,7 @@ function progressFor(seconds: number, index: number) {
 }
 
 export default function V2RoadTraffic() {
-  const paths = useMemo(() => getInitialVehiclePaths().filter((path) => path.length > 1) as Point[][], []);
+  const paths = useMemo(() => getBranchingVehiclePaths().filter((path) => path.length > 1) as Point[][], []);
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
