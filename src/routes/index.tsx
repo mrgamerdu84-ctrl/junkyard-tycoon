@@ -6,6 +6,7 @@ import CityTraffic from "@/game/CityTraffic";
 import CityCompetitors from "@/game/CityCompetitors";
 import CityRivalTaxis from "@/game/CityRivalTaxis";
 import CityPremiumDistricts from "@/game/CityPremiumDistricts";
+import CityMissionLayer from "@/game/CityMissionLayer";
 import ArmoredTruck from "@/game/ArmoredTruck";
 import CrimeEvents from "@/game/CrimeEvents";
 import InterventionDispatcher from "@/game/InterventionDispatcher";
@@ -91,6 +92,7 @@ function TaxiTycoonPage() {
       <div ref={worldRef} className="tt-world" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, cursor: zoom > 1 ? (dragRef.current ? "grabbing" : "grab") : "default" }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
         <img src={citymap} alt="Plan de la ville pour le jeu de taxi" className="tt-map" />
         <CityPremiumDistricts />
+        <CityMissionLayer />
         <div className="tt-vignette" />
         <CityTraffic />
         <CityCompetitors />
