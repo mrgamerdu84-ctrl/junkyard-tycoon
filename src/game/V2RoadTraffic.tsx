@@ -1,19 +1,57 @@
+import { useEffect, useMemo, useState } from "react";
 import { getInitialVehiclePaths } from "./VehicleNavigator";
 
-const paths = getInitialVehiclePaths().filter((path) => path.length > 1);
+type Point = { x: number; y: number };
+
+function sample(path: Point[], progress: number) {
+  const max = path.length - 1;
+  if (max < 1) return { x: 50, y: 50, angle: 0 };
+  const raw = (progress % 1) * max;
+  const index = Math.min(Math.floor(raw), max - 1);
+  const ratio = raw - index;
+  const a = path[index]!;
+  const b = path[index + 1]!;
+  return {
+    x: a.x + (b.x - a.x) * ratio,
+    y: a.y + (b.y - a.y) * ratio,
+    angle: Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI,
+  };
+}
 
 export default function V2RoadTraffic() {
+  const paths = useMemo(() => getInitialVehiclePaths().filter((path) => path.length > 1) as Point[][], []);
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const start = Date.now();
+    const timer = window.setInterval(() => setSeconds((Date.now() - start) / 1000), 80);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <div className="v2-road-traffic" aria-hidden="true">
-      <style>{`
-        .v2-road-traffic{position:absolute;inset:0;z-index:8;pointer-events:none}.v2-car{position:absolute;left:var(--x);top:var(--y);width:18px;height:10px;margin:-5px 0 0 -9px;border-radius:6px 7px 7px 6px;background:linear-gradient(90deg,#fbbf24,#f59e0b);box-shadow:0 4px 8px rgba(0,0,0,.45),0 0 10px rgba(251,191,36,.25);transform:rotate(var(--r));animation:v2CarPulse 1.4s infinite}.v2-car:before{content:"";position:absolute;left:4px;top:2px;width:6px;height:6px;border-radius:2px;background:rgba(15,23,42,.65)}.v2-car:after{content:"";position:absolute;right:-2px;top:2px;width:3px;height:6px;border-radius:3px;background:#fde68a;box-shadow:0 0 5px #fde68a}.v2-car.blue{background:linear-gradient(90deg,#38bdf8,#0284c7);box-shadow:0 4px 8px rgba(0,0,0,.45),0 0 10px rgba(56,189,248,.25)}.v2-car.red{background:linear-gradient(90deg,#fb7185,#e11d48);box-shadow:0 4px 8px rgba(0,0,0,.45),0 0 10px rgba(251,113,133,.25)}.v2-car.green{background:linear-gradient(90deg,#34d399,#059669);box-shadow:0 4px 8px rgba(0,0,0,.45),0 0 10px rgba(52,211,153,.25)}@keyframes v2CarPulse{0%,100%{filter:brightness(.9)}50%{filter:brightness(1.18)}}
-      `}</style>
       {paths.map((path, index) => {
-        const a = path[0]!;
-        const b = path[1]!;
-        const angle = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
-        const colors = ["", "blue", "red", "green"];
-        return <span key={index} className={`v2-car ${colors[index % colors.length]}`} style={{ "--x": `${a.x}%`, "--y": `${a.y}%`, "--r": `${angle}deg` } as React.CSSProperties} />;
+        const position = sample(path, seconds * (0.045 + index * 0.01) + index * 0.2);
+        return (
+          <span
+            key={index}
+            style={{
+              position: "absolute",
+              left: `${position.x}%`,
+              top: `${position.y}%`,
+              width: 18,
+              height: 10,
+              marginLeft: -9,
+              marginTop: -5,
+              borderRadius: 6,
+              background: index % 3 === 0 ? "#fbbf24" : index % 3 === 1 ? "#38bdf8" : "#fb7185",
+              boxShadow: "0 4px 8px rgba(0,0,0,.45)",
+              transform: `rotate(${position.angle}deg)`,
+              transition: "left .08s linear, top .08s linear, transform .08s linear",
+              pointerEvents: "none",
+            }}
+          />
+        );
       })}
     </div>
   );
