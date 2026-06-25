@@ -25,7 +25,7 @@ export default function LeaderboardPanel({ onClose = () => {} }) {
               <div className="text-[#8a6b4d] text-[10px]">Jeudi 25 juin • Pertuis</div>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#2a1a0f] border border-[#5a3c22] text-[#f0d9a8]">×</button>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#2a1a0f] border border-[#5a3c22] text-[#f0d9a8] font-bold">×</button>
         </div>
 
         {/* TABLEAU */}
@@ -69,6 +69,30 @@ export default function LeaderboardPanel({ onClose = () => {} }) {
           ))}
         </div>
 
-        {/* PANNEAU BOIS DU BAS - comme sur ta capture */}
-        <div className="bg-[#160a03] p-2.5 border-t-[3px] border-black">
-          <div class
+        {/* PANNEAU BOIS DU BAS - Terminé proprement */}
+        <div className="bg-[#160a03] p-3 border-t-[3px] border-black flex justify-between items-center text-center">
+          {/* Directeur */}
+          <div className="flex-1 flex flex-col items-center border-r border-[#3a2414]">
+            <div className="w-8 h-8 rounded-full bg-zinc-800 border border-[#d4a85f] flex items-center justify-center text-xs">👤</div>
+            <span className="text-[10px] font-black text-[#d4a85f] mt-1">DIRECTEUR</span>
+            <span className="text-[8px] text-zinc-400">QG Niveau 1</span>
+          </div>
+
+          {/* Classement */}
+          <div className="flex-1 flex flex-col items-center">
+            <span className="text-xl">🏆</span>
+            <span className="text-[10px] font-black text-[#ffd97a] mt-0.5">CLASSEMENT</span>
+            <span className="text-[9px] text-zinc-400">MONDIAL</span>
+          </div>
+
+          {/* Tuto */}
+          <div className="flex-1 flex flex-col items-center border-l border-[#3a2414]">
+            <div className="w-6 h-8 bg-amber-900 border border-amber-950 rounded flex items-center justify-center font-black text-[8px] text-amber-950 shadow">TUTO</div>
+            <span className="text-[10px] font-black text-[#d4a85f] mt-1">CONTRATS</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
