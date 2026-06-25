@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { getTaxiAiPreviewRoutes } from "./TaxiAiController";
+import { createTaxiJobs, getTaxiAiPreviewRoutes } from "./TaxiAiController";
+import { TAXI_PICKUP_POINTS } from "./CityRoadGraph";
 
 type Point = { x: number; y: number };
 
@@ -18,8 +19,13 @@ function sample(path: Point[], progress: number) {
   };
 }
 
+function pickupPoint(id: string) {
+  return TAXI_PICKUP_POINTS.find((p) => p.id === id);
+}
+
 export default function TaxiAiLayer() {
   const routes = useMemo(() => getTaxiAiPreviewRoutes().filter((route) => route.length > 1) as Point[][], []);
+  const jobs = useMemo(() => createTaxiJobs(routes.length), [routes.length]);
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
@@ -30,11 +36,21 @@ export default function TaxiAiLayer() {
 
   return (
     <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 11, pointerEvents: "none" }}>
+      {jobs.map((job, index) => {
+        const pickup = pickupPoint(job.pickupId);
+        const destination = pickupPoint(job.destinationId);
+        return (
+          <span key={job.id}>
+            {pickup && <b style={{ position: "absolute", left: `${pickup.x}%`, top: `${pickup.y}%`, transform: "translate(-50%,-50%)", fontSize: 10, color: "#fff", background: "rgba(15,23,42,.82)", border: "1px solid #facc15", borderRadius: 999, padding: "2px 5px" }}>CLIENT</b>}
+            {destination && <b style={{ position: "absolute", left: `${destination.x}%`, top: `${destination.y}%`, transform: "translate(-50%,-50%)", fontSize: 10, color: "#111827", background: "#facc15", borderRadius: 999, padding: "2px 5px" }}>DEST</b>}
+          </span>
+        );
+      })}
       {routes.map((route, index) => {
         const pos = sample(route, seconds * (0.035 + index * 0.008) + index * 0.18);
         return (
           <span
-            key={index}
+            key={`taxi-${index}`}
             title={`Taxi IA ${index + 1}`}
             style={{
               position: "absolute",
