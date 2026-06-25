@@ -7,6 +7,7 @@ import CityCompetitors from "@/game/CityCompetitors";
 import CityRivalTaxis from "@/game/CityRivalTaxis";
 import CityPremiumDistricts from "@/game/CityPremiumDistricts";
 import CityMissionLayer from "@/game/CityMissionLayer";
+import V2RoadTraffic from "@/game/V2RoadTraffic";
 import ArmoredTruck from "@/game/ArmoredTruck";
 import CrimeEvents from "@/game/CrimeEvents";
 import InterventionDispatcher from "@/game/InterventionDispatcher";
@@ -93,6 +94,7 @@ function TaxiTycoonPage() {
         <img src={citymap} alt="Plan de la ville pour le jeu de taxi" className="tt-map" />
         <CityPremiumDistricts />
         <CityMissionLayer />
+        <V2RoadTraffic />
         <div className="tt-vignette" />
         <CityTraffic />
         <CityCompetitors />
