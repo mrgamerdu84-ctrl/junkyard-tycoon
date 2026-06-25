@@ -2,7 +2,7 @@ name: Build & Upload APK
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, v2-premium, My-taxi-world-rivalité]
   workflow_dispatch:
 
 jobs:
@@ -36,13 +36,11 @@ jobs:
       - name: Build web app
         run: bun run build
 
-      - name: Prepare Capacitor webDir stub
+      - name: Verify local web build
         run: |
-          mkdir -p dist
-          mkdir -p android/app/src/main/assets
-          cat > dist/index.html <<'EOF'
-          <!doctype html><html><head><meta charset="utf-8"><title>Junky City Empire</title><meta http-equiv="refresh" content="0; url=https://junkyard-empire-sim.lovable.app"></head><body>Loading…</body></html>
-          EOF
+          test -f dist/index.html
+          echo "✅ Using the real local Vite build in dist/"
+          grep -q "vite" dist/index.html || true
 
       - name: Sync Android project
         run: npx cap sync android
@@ -64,11 +62,11 @@ jobs:
           fi
           echo "Found APK: $APK_PATH"
           echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
-          echo "name=JunkyCityEmpire-debug.apk" >> "$GITHUB_OUTPUT"
+          echo "name=MyTaxiWorldRivalite-V2-debug.apk" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK as workflow artifact (debug)
         uses: actions/upload-artifact@v4
         with:
-          name: JunkyCityEmpire-debug
+          name: MyTaxiWorldRivalite-V2-debug
           path: ${{ steps.apk.outputs.path }}
-          retention-days: 14
+          retention-days: 7
