@@ -31,14 +31,34 @@ export const Route = createFileRoute("/")({
 
 const ZOOM_LEVELS = [1, 1.5, 2, 2.75] as const;
 
+const COLOR_THEMES = [
+  { id: "gold", label: "Or", color: "#ffd97a", glow: "rgba(255,217,122,0.35)" },
+  { id: "blue", label: "Bleu", color: "#38bdf8", glow: "rgba(56,189,248,0.35)" },
+  { id: "green", label: "Vert", color: "#34d399", glow: "rgba(52,211,153,0.35)" },
+  { id: "pink", label: "Rose", color: "#f472b6", glow: "rgba(244,114,182,0.35)" },
+  { id: "red", label: "Rouge", color: "#fb7185", glow: "rgba(251,113,133,0.35)" },
+] as const;
+
+type ColorThemeId = (typeof COLOR_THEMES)[number]["id"];
+
 function TaxiTycoonPage() {
   const [phase, setPhase] = useState<"splash" | "home" | "game">("splash");
   const [zoomIdx, setZoomIdx] = useState(0);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [colorTheme, setColorTheme] = useState<ColorThemeId>(() => {
+    if (typeof window === "undefined") return "gold";
+    const saved = window.localStorage.getItem("mttw.colorTheme") as ColorThemeId | null;
+    return COLOR_THEMES.some((theme) => theme.id === saved) ? saved! : "gold";
+  });
   const dragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
   const worldRef = useRef<HTMLDivElement | null>(null);
 
   const zoom = ZOOM_LEVELS[zoomIdx];
+  const selectedTheme = COLOR_THEMES.find((theme) => theme.id === colorTheme) ?? COLOR_THEMES[0];
+
+  useEffect(() => {
+    try { window.localStorage.setItem("mttw.colorTheme", colorTheme); } catch {}
+  }, [colorTheme]);
 
   // Clamp pan : on n'a pas le droit de tirer la carte hors-écran.
   useEffect(() => {
@@ -63,7 +83,7 @@ function TaxiTycoonPage() {
     if (zoom <= 1) return;
     // Ne pas voler les clics sur boutons / SVG interactifs.
     const t = e.target as HTMLElement;
-    if (t.closest("button, input, [data-no-pan], .tt-hud, .adm-panel, .adm-btn")) return;
+    if (t.closest("button, input, [data-no-pan], .tt-hud, .adm-panel, .adm-btn, .tt-theme-picker")) return;
     dragRef.current = { startX: e.clientX, startY: e.clientY, baseX: pan.x, baseY: pan.y };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -94,7 +114,13 @@ function TaxiTycoonPage() {
   }
 
   return (
-    <div className="tt-root">
+    <div
+      className="tt-root"
+      style={{
+        "--tt-accent": selectedTheme.color,
+        "--tt-accent-glow": selectedTheme.glow,
+      } as React.CSSProperties}
+    >
       <style>{`
         * { box-sizing: border-box; }
         html, body, #root { margin: 0; padding: 0; background: #0c0d10; }
@@ -129,13 +155,13 @@ function TaxiTycoonPage() {
           z-index: 9999;
           width: 46px; height: 46px;
           border-radius: 50%;
-          border: 2px solid #f5c542;
+          border: 2px solid var(--tt-accent);
           background: rgba(12, 14, 22, 0.92);
-          color: #fde047;
+          color: var(--tt-accent);
           font-size: 11px; font-weight: 900;
           font-family: system-ui, sans-serif;
           cursor: pointer;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.6), 0 0 12px var(--tt-accent-glow);
           display: flex; flex-direction: column;
           align-items: center; justify-content: center;
           line-height: 1;
@@ -145,12 +171,94 @@ function TaxiTycoonPage() {
         .tt-zoom-btn:active { transform: scale(0.94); }
         .tt-zoom-btn .ico { font-size: 16px; }
         .tt-zoom-btn .lbl { font-size: 9px; opacity: 0.9; }
+
+        .tt-theme-picker {
+          position: fixed;
+          top: calc(12px + env(safe-area-inset-top));
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 10000;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 8px;
+          border-radius: 999px;
+          border: 2px solid #5a3a1f;
+          background: linear-gradient(180deg, rgba(61,40,20,0.96), rgba(26,12,4,0.96));
+          box-shadow: inset 0 2px 0 rgba(255,255,255,0.06), 0 6px 16px rgba(0,0,0,0.65);
+          pointer-events: auto;
+        }
+        .tt-theme-label {
+          color: #f0d9b5;
+          font: 900 10px/1 system-ui, sans-serif;
+          letter-spacing: 0.5px;
+          margin: 0 2px 0 3px;
+          text-transform: uppercase;
+        }
+        .tt-theme-dot {
+          width: 24px;
+          height: 24px;
+          border-radius: 999px;
+          border: 2px solid rgba(255,255,255,0.18);
+          cursor: pointer;
+          box-shadow: inset 0 1px 1px rgba(255,255,255,0.35), 0 2px 7px rgba(0,0,0,0.55);
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .tt-theme-dot.active {
+          border-color: #fff4c7;
+          transform: translateY(-1px) scale(1.08);
+          box-shadow: 0 0 0 2px rgba(26,12,4,0.85), 0 0 14px var(--tt-accent-glow);
+        }
+
+        .tt-root .tt-mission-wood,
+        .tt-root .tt-missions-fab,
+        .tt-root .tt-actions-fab,
+        .tt-root .tt-missions-tab.active,
+        .tt-root .tt-depot-card-inline,
+        .tt-root .tt-shop-head h2,
+        .tt-root .tt-trophy small,
+        .tt-root .tt-wood-btn:nth-child(3),
+        .tt-root .tt-coin {
+          color: var(--tt-accent) !important;
+          border-color: var(--tt-accent) !important;
+        }
+        .tt-root .tt-wood-btn:nth-child(3),
+        .tt-root .tt-mission-wood,
+        .tt-root .tt-missions-tab.active {
+          box-shadow: inset 0 2px 0 rgba(255,255,255,0.12), 0 0 12px var(--tt-accent-glow) !important;
+        }
+        .tt-root .tt-mfab-badge,
+        .tt-root .tt-c-time-fill {
+          background: var(--tt-accent) !important;
+        }
+
+        @media (max-width: 520px) {
+          .tt-theme-picker { top: calc(8px + env(safe-area-inset-top)); }
+          .tt-theme-label { display: none; }
+          .tt-theme-dot { width: 22px; height: 22px; }
+        }
         @media (orientation: landscape) and (max-height: 500px) {
           .adm-panel { width: min(360px, 60vw) !important; padding: 10px 12px 14px !important; }
           .adm-btn { top: 8px !important; right: 8px !important; width: 38px !important; height: 38px !important; }
           .tt-zoom-btn { bottom: 12px; right: 60px; }
+          .tt-theme-picker { top: 8px; left: 12px; transform: none; }
         }
       `}</style>
+
+      <div className="tt-theme-picker" data-no-pan>
+        <span className="tt-theme-label">Thème</span>
+        {COLOR_THEMES.map((theme) => (
+          <button
+            key={theme.id}
+            className={`tt-theme-dot ${theme.id === colorTheme ? "active" : ""}`}
+            style={{ background: theme.color }}
+            title={`Thème ${theme.label}`}
+            aria-label={`Changer le thème en ${theme.label}`}
+            onClick={() => setColorTheme(theme.id)}
+          />
+        ))}
+      </div>
 
       <div
         ref={worldRef}
