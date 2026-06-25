@@ -1,0 +1,1 @@
+export const TRAFFIC_ROUTE_PRESETS=[['north_gate','downtown_north','central_roundabout','south_port'],['west_hotels','central_roundabout','east_industrial','east_stadium'],['north_airport','central_roundabout','station'],['west_residential','central_roundabout','hospital']];
