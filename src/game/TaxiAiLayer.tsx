@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createTaxiJobs, getTaxiAiPreviewRoutes, getTaxiStatusAt, taxiStatusLabel } from "./TaxiAiController";
+import { createTaxiJobs, getTaxiAiEarningsSummary, getTaxiAiPreviewRoutes, getTaxiStatusAt, taxiStatusLabel } from "./TaxiAiController";
 import { TAXI_PICKUP_POINTS } from "./CityRoadGraph";
 
 type Point = { x: number; y: number };
@@ -27,6 +27,7 @@ export default function TaxiAiLayer() {
   const routes = useMemo(() => getTaxiAiPreviewRoutes().filter((route) => route.length > 1) as Point[][], []);
   const jobs = useMemo(() => createTaxiJobs(routes.length), [routes.length]);
   const [seconds, setSeconds] = useState(0);
+  const summary = getTaxiAiEarningsSummary(jobs, seconds);
 
   useEffect(() => {
     const start = Date.now();
@@ -36,6 +37,9 @@ export default function TaxiAiLayer() {
 
   return (
     <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 11, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", right: 12, top: 72, padding: "6px 8px", borderRadius: 10, background: "rgba(15,23,42,.86)", border: "1px solid rgba(250,204,21,.55)", color: "#fff", fontSize: 10, fontWeight: 800 }}>
+        IA TAXI · {summary.completed} courses · {summary.totalFare}€ · {summary.active} actifs
+      </div>
       {jobs.map((job) => {
         const pickup = pickupPoint(job.pickupId);
         const destination = pickupPoint(job.destinationId);
