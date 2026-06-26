@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { TAXI_PICKUP_POINTS } from "./CityRoadGraph";
 import { assignCustomersToTaxis, getVisibleCustomerDemands } from "./CustomerDemandController";
-import { createTaxiJobs, getActiveTaxiTrip, getActiveTripEarnings, taxiStatusLabel } from "./TaxiAiController";
+import { createTaxiJobs, getActiveTaxiTrip, taxiStatusLabel } from "./TaxiAiController";
+import { calculateActiveTripRevenue, formatTripRevenueLabel } from "./ActiveTripRevenueController";
 
 function point(id: string) {
   return TAXI_PICKUP_POINTS.find((p) => p.id === id);
@@ -20,12 +21,12 @@ export default function CustomerDemandLayer() {
   const customers = getVisibleCustomerDemands(seconds);
   const assignments = assignCustomersToTaxis(customers, taxis);
   const activeTrips = assignments.map((assignment) => getActiveTaxiTrip(assignment.taxiId, assignment.customerId, assignment.reward, seconds));
-  const earnings = getActiveTripEarnings(activeTrips);
+  const revenue = calculateActiveTripRevenue(activeTrips);
 
   return (
     <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 12, pointerEvents: "none" }}>
       <div style={{ position: "absolute", left: 12, top: 72, padding: "6px 8px", borderRadius: 10, background: "rgba(15,23,42,.86)", border: "1px solid rgba(134,239,172,.55)", color: "#fff", fontSize: 10, fontWeight: 900 }}>
-        Courses payées · {earnings.completed} · +{earnings.earned}€
+        {formatTripRevenueLabel(revenue)}
       </div>
       {customers.map((customer) => {
         const pickup = point(customer.pickupId);
