@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TAXI_PICKUP_POINTS } from "./CityRoadGraph";
 import { assignCustomersToTaxis, getVisibleCustomerDemands } from "./CustomerDemandController";
-import { createTaxiJobs } from "./TaxiAiController";
+import { createTaxiJobs, getActiveTaxiTrip, taxiStatusLabel } from "./TaxiAiController";
 
 function point(id: string) {
   return TAXI_PICKUP_POINTS.find((p) => p.id === id);
@@ -25,6 +25,7 @@ export default function CustomerDemandLayer() {
       {customers.map((customer) => {
         const pickup = point(customer.pickupId);
         const assignment = assignments.find((item) => item.customerId === customer.id);
+        const trip = assignment ? getActiveTaxiTrip(assignment.taxiId, customer.id, customer.reward, seconds) : null;
         if (!pickup) return null;
         return (
           <span
@@ -36,15 +37,16 @@ export default function CustomerDemandLayer() {
               transform: "translate(-50%,-135%)",
               padding: "3px 6px",
               borderRadius: 999,
-              background: assignment ? "rgba(34,197,94,.92)" : "rgba(14,165,233,.92)",
+              background: trip?.phase === "completed" ? "rgba(134,239,172,.92)" : assignment ? "rgba(34,197,94,.92)" : "rgba(14,165,233,.92)",
               border: "1px solid rgba(255,255,255,.5)",
-              color: "#fff",
+              color: trip?.phase === "completed" ? "#111827" : "#fff",
               fontSize: 10,
               fontWeight: 900,
               boxShadow: "0 6px 12px rgba(0,0,0,.4)",
             }}
           >
             👤 {customer.reward}€ · {assignment ? assignment.taxiId : "en attente"}
+            {trip && <span> · {taxiStatusLabel(trip.phase)} {Math.round(trip.progress * 100)}%</span>}
           </span>
         );
       })}
