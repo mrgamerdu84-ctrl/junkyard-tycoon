@@ -10,6 +10,7 @@ import CityMissionLayer from "@/game/CityMissionLayer";
 import V2RoadTraffic from "@/game/V2RoadTraffic";
 import TaxiAiLayer from "@/game/TaxiAiLayer";
 import CustomerDemandLayer from "@/game/CustomerDemandLayer";
+import AiTaxiWalletHud from "@/game/AiTaxiWalletHud";
 import ArmoredTruck from "@/game/ArmoredTruck";
 import CrimeEvents from "@/game/CrimeEvents";
 import InterventionDispatcher from "@/game/InterventionDispatcher";
@@ -110,6 +111,7 @@ function TaxiTycoonPage() {
         <ArmoredTruck />
       </div>
       <button className="tt-zoom-btn" data-no-pan onClick={cycleZoom} title="Zoom carte"><span className="ico">🔎</span><span>{zoom}x</span></button>
+      <AiTaxiWalletHud />
       <RadarFlash />
       <AdminPanel />
       <VersionBanner />
