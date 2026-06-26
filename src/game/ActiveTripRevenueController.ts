@@ -6,6 +6,13 @@ export type ActiveTripRevenueState = {
   pendingTrips: number;
 };
 
+export type AppliedTripRevenue = {
+  wallet: number;
+  earned: number;
+  paidTrips: number;
+  pendingTrips: number;
+};
+
 export function calculateActiveTripRevenue(trips: ActiveTaxiTrip[], baseWallet = 0): ActiveTripRevenueState {
   const paidTrips = trips.filter((trip) => trip.phase === 'completed');
   const pendingTrips = trips.length - paidTrips.length;
@@ -13,6 +20,17 @@ export function calculateActiveTripRevenue(trips: ActiveTaxiTrip[], baseWallet =
     walletPreview: baseWallet + paidTrips.reduce((sum, trip) => sum + trip.reward, 0),
     paidTrips: paidTrips.length,
     pendingTrips,
+  };
+}
+
+export function applyActiveTripRevenue(trips: ActiveTaxiTrip[], currentWallet: number): AppliedTripRevenue {
+  const paidTrips = trips.filter((trip) => trip.phase === 'completed');
+  const earned = paidTrips.reduce((sum, trip) => sum + trip.reward, 0);
+  return {
+    wallet: currentWallet + earned,
+    earned,
+    paidTrips: paidTrips.length,
+    pendingTrips: trips.length - paidTrips.length,
   };
 }
 
