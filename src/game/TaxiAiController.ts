@@ -13,6 +13,14 @@ export type TaxiAiJob = {
   phaseDuration: number;
 };
 
+export type ActiveTaxiTrip = {
+  taxiId: string;
+  customerId: string;
+  phase: TaxiAiStatus;
+  progress: number;
+  reward: number;
+};
+
 export function createTaxiJobs(taxiCount = 4): TaxiAiJob[] {
   return Array.from({ length: taxiCount }, (_, index) => {
     const pickup = TAXI_PICKUP_POINTS[index % TAXI_PICKUP_POINTS.length]!;
@@ -61,5 +69,17 @@ export function getTaxiAiEarningsSummary(jobs: TaxiAiJob[], seconds: number) {
     completed: completedJobs.length,
     totalFare: completedJobs.reduce((sum, job) => sum + job.fare, 0),
     active: jobs.length - completedJobs.length,
+  };
+}
+
+export function getActiveTaxiTrip(taxiId: string, customerId: string, reward: number, seconds: number): ActiveTaxiTrip {
+  const loop = seconds % 18;
+  const phase: TaxiAiStatus = loop < 7 ? 'to_client' : loop < 14 ? 'to_destination' : 'completed';
+  return {
+    taxiId,
+    customerId,
+    phase,
+    progress: Math.min(1, (loop % 7) / 7),
+    reward,
   };
 }
