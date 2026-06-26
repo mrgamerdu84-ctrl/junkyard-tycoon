@@ -83,3 +83,11 @@ export function getActiveTaxiTrip(taxiId: string, customerId: string, reward: nu
     reward,
   };
 }
+
+export function getActiveTripEarnings(trips: ActiveTaxiTrip[]) {
+  const completedTrips = trips.filter((trip) => trip.phase === 'completed');
+  return {
+    completed: completedTrips.length,
+    earned: completedTrips.reduce((sum, trip) => sum + trip.reward, 0),
+  };
+}
