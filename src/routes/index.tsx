@@ -6,6 +6,7 @@ import CityTraffic from "@/game/CityTraffic";
 import CityCompetitors from "@/game/CityCompetitors";
 import CityRivalTaxis from "@/game/CityRivalTaxis";
 import LegacyDepotParkingLayer from "@/game/LegacyDepotParkingLayer";
+import LegacyDepotTaxiVisualLayer from "@/game/LegacyDepotTaxiVisualLayer";
 import ArmoredTruck from "@/game/ArmoredTruck";
 import CrimeEvents from "@/game/CrimeEvents";
 import InterventionDispatcher from "@/game/InterventionDispatcher";
@@ -134,6 +135,7 @@ function TaxiTycoonPage() {
         <img src={citymap} alt="Plan de la ville pour le jeu de taxi" className="tt-map" />
         <div className="tt-vignette" />
         <LegacyDepotParkingLayer />
+        <LegacyDepotTaxiVisualLayer />
         {heavyLayersReady && <CityTraffic />}
         {heavyLayersReady && !perfMode && <CityCompetitors />}
         {heavyLayersReady && !perfMode && <CityRivalTaxis />}
