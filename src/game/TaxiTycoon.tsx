@@ -1,4 +1,4 @@
-"import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "@tanstack/react-router";
 import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
@@ -14,6 +14,18 @@ import TutorialDialog from "@/components/TutorialDialog";
 import { getLicense, addLicenseXp, rollClientTier, tierFareMult, tierXp } from "@/lib/license";
 import { pickSpecialMission, SPECIAL_COOLDOWN_MS } from "@/lib/specialMissions";
 import { getGameTime, periodLabel } from "./cityClock";
+import RadioPlayer from "./RadioPlayer";
+import PersonnelPanel from "./PersonnelPanel";
+import MissionOfferToast from "./MissionOfferToast";
+import { getMaintenanceDiscount, getTipsBonus, startPersonnelTick } from "./personnel";
+import { useAuth } from "@/lib/useAuth";
+import { resolveAvatarSrc } from "@/components/ProfileCard";
+import { supabase } from "@/integrations/supabase/client";
+import playerHqAsset from "@/assets/taxi-warehouse.png.asset.json";
+
+const PLAYER_HQ_IMG = playerHqAsset.url;
+
+
 
 
 
@@ -94,7 +106,7 @@ type Taxi = {
   transitionFromY?: number;
   transitionUntil?: number;
 };
-const TRANSITION_MS = 700;
+const TRANSITION_MS = 1500;
 
 
 // Mécanique : retour au QG tous les N courses, attente de DEPOSIT_MS
@@ -469,16 +481,4 @@ function RivalDepot({ x, y }: { x: number; y: number }) {
           const py = H / 2 - 28;
           return (
             <g key={i}>
-              <rect x={px - 14} y={py - 16} width="28" height="32" rx="2" fill="#1a0a10" stroke="#ff3040" strokeWidth="1.1" strokeDasharray="3 2" opacity="0.9" />
-              <text x={px} y={py + 22} fontSize="5.5" textAnchor="middle" fill="#ff5566" opacity="0.7">R{String(i + 1).padStart(2, "0")}</text>
-            </g>
-          );
-        })}
-      </g>
-
-      {/* Plots éclairés entrée */}
-      <g>
-        {[-W / 2 + 8, W / 2 - 8].map((cx, i) => (
-          <g key={i} transform={`translate(${cx},${H / 2 - 26})`}>
-            <circle r="5" fill="#0a0608" stroke="#ff3040" strokeWidth="1.2" />
-            <circle r="2.5" fi
+              <rect x={px - 14} y={py - 16} width="28" height="32" rx="2" fill="#1a0a10" stroke="#ff3040" strokeWidth="1.1" strokeD
