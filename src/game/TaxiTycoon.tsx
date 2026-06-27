@@ -489,4 +489,4 @@ function RivalDepot({ x, y }: { x: number; y: number }) {
   const W = 220;
   const H = 200;
   return (
-    <g transform={`translate(${x},${y})`} filter="
+    <g transform={`translate(${x},${y})`} filter="url(#taxi-shadow)">
