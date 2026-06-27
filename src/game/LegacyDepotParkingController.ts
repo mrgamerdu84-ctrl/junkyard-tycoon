@@ -5,6 +5,14 @@ export type DepotParkingSpot = {
   angle: number;
 };
 
+export type DepotWorldPoint = {
+  x: number;
+  y: number;
+};
+
+const MAP_WIDTH = 1920;
+const MAP_HEIGHT = 1080;
+
 // Places alignées dans la cour du dépôt Taxi World sur la map legacy.
 // Coordonnées en pourcentage pour rester stables avec l'image plein écran.
 export const LEGACY_DEPOT_PARKING_SPOTS: DepotParkingSpot[] = [
@@ -25,4 +33,32 @@ export const LEGACY_DEPOT_EXIT_ROUTE = [
 
 export function getLegacyDepotParkingSpot(index: number) {
   return LEGACY_DEPOT_PARKING_SPOTS[index % LEGACY_DEPOT_PARKING_SPOTS.length];
+}
+
+export function percentToLegacyWorld(point: DepotWorldPoint): DepotWorldPoint {
+  return {
+    x: (point.x / 100) * MAP_WIDTH,
+    y: (point.y / 100) * MAP_HEIGHT,
+  };
+}
+
+export function getLegacyDepotParkingWorldPoint(index: number): DepotWorldPoint {
+  const spot = getLegacyDepotParkingSpot(index);
+  return percentToLegacyWorld({ x: spot.x, y: spot.y });
+}
+
+export function getLegacyDepotExitWorldPoint(): DepotWorldPoint {
+  const exit = LEGACY_DEPOT_EXIT_ROUTE[LEGACY_DEPOT_EXIT_ROUTE.length - 1];
+  return percentToLegacyWorld(exit);
+}
+
+export function getLegacyTaxiParkingAssignment(taxiIndex: number) {
+  const spot = getLegacyDepotParkingSpot(taxiIndex);
+  const world = getLegacyDepotParkingWorldPoint(taxiIndex);
+  const exit = getLegacyDepotExitWorldPoint();
+  return {
+    spot,
+    world,
+    exit,
+  };
 }
