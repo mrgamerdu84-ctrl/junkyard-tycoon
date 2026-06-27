@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+"import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "@tanstack/react-router";
 import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
@@ -70,7 +70,7 @@ export const TAXI_PAINTS = [
   { id: "white", name: "Blanc", color: "#f8fafc", filter: "grayscale(1) brightness(1.45) contrast(0.95)" },
 ] as const;
 
-type TaxiMode = "idle" | "leaving_depot" | "roaming" | "to_pickup" | "to_dest" | "returning" | "entering_depot" | "to_gas" | "refueling" | "depositing";
+type TaxiMode = "idle" | "roaming" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling" | "depositing";
 type LanePosition = { x: number; y: number; angle: number };
 type Taxi = {
   id: number;
@@ -87,12 +87,6 @@ type Taxi = {
   ridesSinceDeposit: number; // nb courses depuis le dernier dépôt au QG
   depositUntil?: number;     // timestamp ms : fin du dépôt au QG
   mustDeposit?: boolean;     // flag : doit déposer au QG en retournant
-  // Dépôt legacy : position/chemin direct hors route pour éviter les téléportations visibles.
-  parkingIndex?: number;
-  depotRoute?: { x: number; y: number }[];
-  depotRouteStep?: number;
-  depotXY?: { x: number; y: number; angle: number };
-  depotAngle?: number;
   // Transition douce lors d'un changement de path (acceptation de course) :
   // on évite le « saut » visuel en interpolant entre la position d'origine
   // et la nouvelle position sur le path pickup pendant TRANSITION_MS.
@@ -142,73 +136,6 @@ const TAXI_COST_BASE = 600;
 const MAX_JOBS_BASE = 3;
 const FUEL_REFILL_MS = 4000;
 const FUEL_LOW_THRESHOLD = 25;
-
-
-// === Dépôt legacy Taxi World ===
-// Coordonnées issues du calque parking déjà posé sur l'ancienne branche.
-// On les garde ici pour que TaxiTycoon.tsx reste autonome quand tu remplaces juste ce fichier.
-type LegacyDepotPoint = { x: number; y: number };
-const LEGACY_MAP_W = 1920;
-const LEGACY_MAP_H = 1080;
-const LEGACY_DEPOT_PARKING_SPOTS = [
-  { id: "taxi-01", x: 31.8, y: 68.5, angle: -8 },
-  { id: "taxi-02", x: 34.2, y: 68.0, angle: -8 },
-  { id: "taxi-03", x: 36.6, y: 67.5, angle: -8 },
-  { id: "taxi-04", x: 39.0, y: 67.0, angle: -8 },
-  { id: "taxi-05", x: 41.4, y: 66.5, angle: -8 },
-  { id: "taxi-06", x: 43.8, y: 66.0, angle: -8 },
-] as const;
-const LEGACY_DEPOT_EXIT_ROUTE: LegacyDepotPoint[] = [
-  { x: 37.5, y: 67.4 },
-  { x: 42.2, y: 64.2 },
-  { x: 47.8, y: 60.4 },
-  { x: 53.5, y: 56.6 },
-];
-function legacyPercentToWorld(point: LegacyDepotPoint): LegacyDepotPoint {
-  return { x: (point.x / 100) * LEGACY_MAP_W, y: (point.y / 100) * LEGACY_MAP_H };
-}
-function getLegacyTaxiDepotFlow(taxiIndex: number) {
-  const spot = LEGACY_DEPOT_PARKING_SPOTS[taxiIndex % LEGACY_DEPOT_PARKING_SPOTS.length];
-  const parking = legacyPercentToWorld({ x: spot.x, y: spot.y });
-  const exitRoute = LEGACY_DEPOT_EXIT_ROUTE.map(legacyPercentToWorld);
-  const outRoute = [parking, ...exitRoute];
-  return {
-    spot,
-    parking: { ...parking, angle: spot.angle },
-    exit: exitRoute[exitRoute.length - 1],
-    outRoute,
-    returnRoute: [...outRoute].reverse(),
-  };
-}
-function pointAngle(a: LegacyDepotPoint, b: LegacyDepotPoint) {
-  return (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
-}
-function moveTaxiOnDepotRoute(taxi: Taxi, dt: number) {
-  const route = taxi.depotRoute;
-  if (!route || route.length === 0) return true;
-  let stepIndex = taxi.depotRouteStep ?? 0;
-  let current = taxi.depotXY ?? { ...route[0], angle: route[1] ? pointAngle(route[0], route[1]) : (taxi.depotAngle ?? 0) };
-  let remaining = Math.max(0, taxi.speed * dt);
-  while (remaining > 0 && stepIndex < route.length - 1) {
-    const target = route[stepIndex + 1];
-    const dx = target.x - current.x;
-    const dy = target.y - current.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist <= 0.001 || remaining >= dist) {
-      current = { x: target.x, y: target.y, angle: dist > 0.001 ? pointAngle(current, target) : (current.angle ?? 0) };
-      remaining -= dist;
-      stepIndex += 1;
-    } else {
-      const k = remaining / dist;
-      current = { x: current.x + dx * k, y: current.y + dy * k, angle: pointAngle(current, target) };
-      remaining = 0;
-    }
-  }
-  taxi.depotRouteStep = stepIndex;
-  taxi.depotXY = current;
-  taxi.depotAngle = current.angle;
-  return stepIndex >= route.length - 1;
-}
 
 // === Livrées de taxi inspirées de vraies compagnies (yellow body only) ===
 export type Livery = {
@@ -490,3 +417,68 @@ function RivalDepot({ x, y }: { x: number; y: number }) {
   const H = 200;
   return (
     <g transform={`translate(${x},${y})`} filter="url(#taxi-shadow)">
+      {/* ombre portée */}
+      <ellipse cx="0" cy={H / 2 - 8} rx={W / 2 + 4} ry="14" fill="rgba(0,0,0,0.55)" />
+
+      {/* Dalle / parvis */}
+      <rect x={-W / 2} y={-H / 2} width={W} height={H} rx="5" fill="#1f1418" stroke="#0a0608" strokeWidth="2" />
+      <g opacity="0.55">
+        {Array.from({ length: 14 }).map((_, i) => (
+          <rect key={i} x={-W / 2 + i * (W / 14)} y={-H / 2} width={W / 28} height="5" fill="#ff3040" />
+        ))}
+      </g>
+
+      {/* Bâtiment principal (2 étages, façade vitrée) */}
+      <rect x={-W / 2 + 18} y={-H / 2 + 20} width={W - 36} height={H / 2 + 4} rx="2.5" fill="#3a1d24" stroke="#0a0608" strokeWidth="1.6" />
+      {/* Toit en pente */}
+      <path d={`M ${-W / 2 + 14} ${-H / 2 + 20} L 0 ${-H / 2 - 8} L ${W / 2 - 14} ${-H / 2 + 20} Z`} fill="#7a1020" stroke="#0a0608" strokeWidth="1.6" />
+      <rect x="-6" y={-H / 2 - 28} width="3" height="22" fill="#0a0608" />
+      <circle cx="-4.5" cy={-H / 2 - 30} r="2.2" fill="#ff3040">
+        <animate attributeName="opacity" values="1;0.2;1" dur="1.1s" repeatCount="indefinite" />
+      </circle>
+
+      {/* Vitrines / fenêtres (2 rangées) */}
+      {[0, 1].map(row => (
+        <g key={row}>
+          {[0, 1, 2, 3].map(col => (
+            <rect
+              key={col}
+              x={-W / 2 + 30 + col * ((W - 60) / 4)}
+              y={-H / 2 + 30 + row * 28}
+              width={(W - 80) / 4}
+              height={20}
+              fill="#0a0608"
+              stroke="#1a0a10"
+              strokeWidth="1"
+            />
+          ))}
+        </g>
+      ))}
+      {/* Porte centrale */}
+      <rect x="-12" y={-H / 2 + 90} width="24" height="20" fill="#0a0608" stroke="#ff3040" strokeWidth="1.2" />
+      <rect x="-1" y={-H / 2 + 90} width="2" height="20" fill="#ff3040" opacity="0.7" />
+
+      {/* Enseigne au-dessus de la porte */}
+      <rect x={-70} y={-H / 2 + 4} width={140} height={14} rx="2" fill="#0a0608" stroke="#ff3040" strokeWidth="1.6" />
+      <text x="0" y={-H / 2 + 14} fontSize="11" fontWeight="900" textAnchor="middle" fill="#ff5566" letterSpacing="2" style={{ filter: "drop-shadow(0 0 4px #ff3040)" }}>RIVAL CABS</text>
+
+      {/* Bandes parking rouges */}
+      <g>
+        {[-3, -1, 1, 3].map((k, i) => {
+          const px = k * 22;
+          const py = H / 2 - 28;
+          return (
+            <g key={i}>
+              <rect x={px - 14} y={py - 16} width="28" height="32" rx="2" fill="#1a0a10" stroke="#ff3040" strokeWidth="1.1" strokeDasharray="3 2" opacity="0.9" />
+              <text x={px} y={py + 22} fontSize="5.5" textAnchor="middle" fill="#ff5566" opacity="0.7">R{String(i + 1).padStart(2, "0")}</text>
+            </g>
+          );
+        })}
+      </g>
+
+      {/* Plots éclairés entrée */}
+      <g>
+        {[-W / 2 + 8, W / 2 - 8].map((cx, i) => (
+          <g key={i} transform={`translate(${cx},${H / 2 - 26})`}>
+            <circle r="5" fill="#0a0608" stroke="#ff3040" strokeWidth="1.2" />
+            <circle r="2.5" fi
