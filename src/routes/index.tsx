@@ -77,7 +77,7 @@ function TaxiTycoonPage() {
       setHeavyLayersReady(false);
       return;
     }
-    const timer = window.setTimeout(() => setHeavyLayersReady(true), perfMode ? 1500 : 300);
+    const timer = window.setTimeout(() => setHeavyLayersReady(true), perfMode ? 900 : 300);
     return () => window.clearTimeout(timer);
   }, [phase, perfMode]);
 
@@ -137,13 +137,13 @@ function TaxiTycoonPage() {
         <LegacyDepotParkingLayer />
         <LegacyDepotTaxiVisualLayer />
         {heavyLayersReady && <CityTraffic />}
-        {heavyLayersReady && !perfMode && <CityCompetitors />}
-        {heavyLayersReady && !perfMode && <CityRivalTaxis />}
-        {!perfMode && <EmergencyStations />}
-        {!perfMode && <CrimeEvents />}
-        {!perfMode && <InterventionDispatcher />}
+        {heavyLayersReady && <CityCompetitors />}
+        {heavyLayersReady && <CityRivalTaxis />}
+        <EmergencyStations />
+        <CrimeEvents />
+        <InterventionDispatcher />
         <TaxiTycoon />
-        {!perfMode && <ArmoredTruck />}
+        <ArmoredTruck />
       </div>
 
       <button className="tt-zoom-btn" data-no-pan onClick={cycleZoom} title="Zoom carte"><span className="ico">🔎</span><span className="lbl">{zoom}x</span></button>
